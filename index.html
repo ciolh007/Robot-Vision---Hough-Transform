@@ -1,0 +1,2385 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+        <title>Robot Vision - Hough Transform</title>
+
+        <link rel="stylesheet" href="css/reveal.css">
+        <link rel="stylesheet" href="css/theme/ntnuerc.css">
+
+        <!-- Theme used for syntax highlighting of code -->
+        <link rel="stylesheet" href="lib/css/zenburn.css">
+        <script src="https://daybrush.com/scenejs/release/latest/dist/scene.min.js"></script>
+		
+        <!-- Printing and PDF exports -->
+        <script>
+            var link = document.createElement( 'link' );
+            link.rel = 'stylesheet';
+            link.type = 'text/css';
+            link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+            document.getElementsByTagName( 'head' )[0].appendChild( link );
+        </script>
+        <script src="js/ntnu.js"></script>
+    </head>
+    <body>
+        <div class="reveal">
+        <div class="slides">
+            
+<section id="start" data-state="start">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+
+<div class="jb-output-code jb-render">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-output jb-render">
+
+<h1> Robot Vision - Hough Transform</h1>
+
+   <div class="author" style="text-align:center;">
+    
+<p>
+      Jacky Baltes<br>
+      National Taiwan Normal University<br>
+      Taipei, Taiwan<br>
+      <a href="mailto:jacky.baltes@ntnu.edu.tw">jacky.baltes@ntnu.edu.tw</a><br>
+</p>
+
+   </div>
+</div><!-- end of jb-output jb-render -->
+</div><!-- end of jb-output-code jb-render -->
+
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-8ee4a74b-7b43-4871-877c-4b509e05b982" ><span id="id-8ee4a74b-7b43-4871-877c-4b509e05b982"><img id="img-id-8ee4a74b-7b43-4871-877c-4b509e05b982"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-b44fb054-3bf9-47a3-8634-c93e8f578c85" ><span id="id-b44fb054-3bf9-47a3-8634-c93e8f578c85"><img id="img-id-b44fb054-3bf9-47a3-8634-c93e8f578c85" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="introduction" data-state="introduction">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+
+<div class="jb-output-code jb-render">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-output jb-render">
+<div class="document" id="hough-transform">
+<h1 class="title">Hough Transform</h1>
+<ul class="simple">
+<li>The Hough Transform is a methodology and algorithm to find complex shapes inside of an image</li>
+<li>It is applied to the output of edge detectors or other feature detectors</li>
+<li>It's most popular use is in detecting lines and line segments</li>
+</ul>
+</div>
+
+</div><!-- end of jb-output jb-render -->
+</div><!-- end of jb-output-code jb-render -->
+
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-dc110a94-3535-4e3d-b5d6-2b4314528136" ><span id="id-dc110a94-3535-4e3d-b5d6-2b4314528136"><img id="img-id-dc110a94-3535-4e3d-b5d6-2b4314528136"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-6098b606-313c-4b13-ba2b-c8770473031c" ><span id="id-6098b606-313c-4b13-ba2b-c8770473031c"><img id="img-id-6098b606-313c-4b13-ba2b-c8770473031c" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00004_frag_00001" data-state="slide_00004_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+<div class="jb-input jb-render jb-code" style="text-align:center">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-input-code jb-render">
+<div class="highlight" style="background: #f8f8f8; color:#101010;display=inline-block;"><pre style="line-height: 125%"><span></span>url <span style="color: #666666">=</span> <span style="color: #BA2121">&#39;https://i.postimg.cc/3rBpv96M/image.png&#39;</span>
+img <span style="color: #666666">=</span> io<span style="color: #666666">.</span>imread( url )
+img <span style="color: #666666">=</span> cv2<span style="color: #666666">.</span>resize(img, (<span style="color: #666666">640</span>, <span style="color: #666666">480</span> ) )
+
+fig <span style="color: #666666">=</span> plt<span style="color: #666666">.</span>figure( dpi <span style="color: #666666">=</span> <span style="color: #666666">300</span> )
+ax1 <span style="color: #666666">=</span> fig<span style="color: #666666">.</span>add_subplot(<span style="color: #666666">1</span>,<span style="color: #666666">1</span>,<span style="color: #666666">1</span>)
+ax1<span style="color: #666666">.</span>set_title(<span style="color: #BA2121">&#39;Original Image&#39;</span>)
+
+ax1<span style="color: #666666">.</span>imshow(img, interpolation <span style="color: #666666">=</span> <span style="color: #BA2121">&#39;bicubic&#39;</span>)
+ax1<span style="color: #666666">.</span>set_xticks([])
+ax1<span style="color: #666666">.</span>set_yticks([])  
+
+img_ <span style="color: #666666">=</span> addJBFigure(<span style="color: #BA2121">&quot;orig&quot;</span>, <span style="color: #666666">0</span>, <span style="color: #666666">0</span>, fig )
+plt<span style="color: #666666">.</span>close()
+</pre></div>
+
+</div><!-- end of jb-input-code jb-render -->
+
+</div>
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-02361ecb-f05a-4efe-9dc7-23a084e9c3a4" ><span id="id-02361ecb-f05a-4efe-9dc7-23a084e9c3a4"><img id="img-id-02361ecb-f05a-4efe-9dc7-23a084e9c3a4"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-e729c42a-f96e-446d-8753-61db34b928e1" ><span id="id-e729c42a-f96e-446d-8753-61db34b928e1"><img id="img-id-e729c42a-f96e-446d-8753-61db34b928e1" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00005_frag_00001" data-state="slide_00005_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+
+<div class="jb-output-code jb-render">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-output jb-render">
+
+<span id="id-95c6c3b2-7a73-430b-a27f-8e1a8f2c8852" ><span id="id-95c6c3b2-7a73-430b-a27f-8e1a8f2c8852"><img id="img-id-95c6c3b2-7a73-430b-a27f-8e1a8f2c8852"     src="assets/images/orig.svg"/></span>
+</span>
+</div><!-- end of jb-output jb-render -->
+</div><!-- end of jb-output-code jb-render -->
+
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-ff107c7d-4ffc-4f40-9764-0d3aa07257b7" ><span id="id-ff107c7d-4ffc-4f40-9764-0d3aa07257b7"><img id="img-id-ff107c7d-4ffc-4f40-9764-0d3aa07257b7"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-ce56a0e4-6217-49e0-bc41-305ef0f8e4fd" ><span id="id-ce56a0e4-6217-49e0-bc41-305ef0f8e4fd"><img id="img-id-ce56a0e4-6217-49e0-bc41-305ef0f8e4fd" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00006_frag_00001" data-state="slide_00006_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+<div class="jb-input jb-render jb-code" style="text-align:center">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-input-code jb-render">
+<div class="highlight" style="background: #f8f8f8; color:#101010;display=inline-block;"><pre style="line-height: 125%"><span></span>kernel <span style="color: #666666">=</span> <span style="color: #666666">5</span> <span style="color: #408080; font-style: italic">#@param [&quot;3&quot;, &quot;5&quot;, &quot;7&quot;, &quot;9&quot;, &quot;11&quot;] {type:&quot;raw&quot;}</span>
+fig <span style="color: #666666">=</span> plt<span style="color: #666666">.</span>figure( dpi<span style="color: #666666">=300</span> )
+ax1 <span style="color: #666666">=</span> fig<span style="color: #666666">.</span>add_subplot(<span style="color: #666666">3</span>,<span style="color: #666666">2</span>,<span style="color: #666666">1</span>)
+ax1<span style="color: #666666">.</span>set_title(<span style="color: #BA2121">&#39;Original Image&#39;</span>)
+
+ax1<span style="color: #666666">.</span>imshow(img, interpolation <span style="color: #666666">=</span> <span style="color: #BA2121">&#39;bicubic&#39;</span>)
+ax1<span style="color: #666666">.</span>set_xticks([])
+ax1<span style="color: #666666">.</span>set_yticks([])  
+
+gray <span style="color: #666666">=</span> cv2<span style="color: #666666">.</span>cvtColor( img,  cv2<span style="color: #666666">.</span>COLOR_RGB2GRAY );
+
+ax2 <span style="color: #666666">=</span> fig<span style="color: #666666">.</span>add_subplot(<span style="color: #666666">3</span>,<span style="color: #666666">2</span>,<span style="color: #666666">2</span>)
+ax2<span style="color: #666666">.</span>set_title(<span style="color: #BA2121">&#39;Converted to Gray&#39;</span>)
+ax2<span style="color: #666666">.</span>imshow(gray, cmap <span style="color: #666666">=</span> <span style="color: #BA2121">&#39;gray&#39;</span>)
+ax2<span style="color: #666666">.</span>set_xticks([])
+ax2<span style="color: #666666">.</span>set_yticks([])
+
+sobelX <span style="color: #666666">=</span> cv2<span style="color: #666666">.</span>Sobel( gray, cv2<span style="color: #666666">.</span>CV_32F, <span style="color: #666666">1</span>, <span style="color: #666666">0</span>, ksize<span style="color: #666666">=</span> kernel)
+
+sobelX <span style="color: #666666">=</span> np<span style="color: #666666">.</span>abs(sobelX)
+sobelX <span style="color: #666666">=</span> sobelX <span style="color: #666666">/</span> np<span style="color: #666666">.</span>max(sobelX)
+
+ax3 <span style="color: #666666">=</span> fig<span style="color: #666666">.</span>add_subplot(<span style="color: #666666">3</span>,<span style="color: #666666">2</span>,<span style="color: #666666">3</span>)
+ax3<span style="color: #666666">.</span>set_title(<span style="color: #BA2121">&#39;Sobel X (kernel </span><span style="color: #BB6688; font-weight: bold">{}</span><span style="color: #BA2121">)&#39;</span><span style="color: #666666">.</span>format(kernel))
+ax3<span style="color: #666666">.</span>set_xticks([])
+ax3<span style="color: #666666">.</span>set_yticks([])
+
+ax3<span style="color: #666666">.</span>imshow(sobelX, cmap <span style="color: #666666">=</span> <span style="color: #BA2121">&#39;gray&#39;</span>)
+
+sobelY <span style="color: #666666">=</span> cv2<span style="color: #666666">.</span>Sobel( gray, cv2<span style="color: #666666">.</span>CV_64F, <span style="color: #666666">0</span>, <span style="color: #666666">1</span>, ksize<span style="color: #666666">=</span> kernel)
+sobelY <span style="color: #666666">=</span> np<span style="color: #666666">.</span>abs(sobelY)
+sobelY <span style="color: #666666">=</span> sobelY <span style="color: #666666">/</span> np<span style="color: #666666">.</span>max(sobelY)
+
+ax4 <span style="color: #666666">=</span> fig<span style="color: #666666">.</span>add_subplot(<span style="color: #666666">3</span>,<span style="color: #666666">2</span>,<span style="color: #666666">4</span>)
+ax4<span style="color: #666666">.</span>set_title(<span style="color: #BA2121">&#39;Sobel Y (kernel </span><span style="color: #BB6688; font-weight: bold">{}</span><span style="color: #BA2121">)&#39;</span><span style="color: #666666">.</span>format(kernel))
+ax4<span style="color: #666666">.</span>set_xticks([])
+ax4<span style="color: #666666">.</span>set_yticks([])
+
+ax4<span style="color: #666666">.</span>imshow(sobelY, cmap <span style="color: #666666">=</span> <span style="color: #BA2121">&#39;gray&#39;</span>)
+
+laplacian <span style="color: #666666">=</span> cv2<span style="color: #666666">.</span>Laplacian( gray, cv2<span style="color: #666666">.</span>CV_32F )
+laplacian <span style="color: #666666">=</span> np<span style="color: #666666">.</span>abs(laplacian)
+laplacian <span style="color: #666666">=</span> laplacian <span style="color: #666666">/</span> np<span style="color: #666666">.</span>max( laplacian )
+
+ax5 <span style="color: #666666">=</span> fig<span style="color: #666666">.</span>add_subplot( <span style="color: #666666">3</span>, <span style="color: #666666">2</span>, <span style="color: #666666">5</span> )
+ax5<span style="color: #666666">.</span>set_title( <span style="color: #BA2121">&#39;Laplacian&#39;</span>)
+ax5<span style="color: #666666">.</span>set_xticks([])
+ax5<span style="color: #666666">.</span>set_yticks([])
+
+ax5<span style="color: #666666">.</span>imshow( laplacian, cmap <span style="color: #666666">=</span> <span style="color: #BA2121">&#39;gray&#39;</span>)
+
+canny <span style="color: #666666">=</span> cv2<span style="color: #666666">.</span>Canny( gray, <span style="color: #666666">50</span>, <span style="color: #666666">300</span> )
+ax6 <span style="color: #666666">=</span> fig<span style="color: #666666">.</span>add_subplot(<span style="color: #666666">3</span>,<span style="color: #666666">2</span>,<span style="color: #666666">6</span>)
+ax6<span style="color: #666666">.</span>set_title(<span style="color: #BA2121">&#39;Canny&#39;</span>)
+ax6<span style="color: #666666">.</span>set_xticks([])
+ax6<span style="color: #666666">.</span>set_yticks([])
+
+ax6<span style="color: #666666">.</span>imshow( canny, cmap <span style="color: #666666">=</span> <span style="color: #BA2121">&#39;gray&#39;</span>)
+img_ <span style="color: #666666">=</span> addJBFigure(<span style="color: #BA2121">&quot;edge&quot;</span>, <span style="color: #666666">0</span>, <span style="color: #666666">0</span>, fig )
+plt<span style="color: #666666">.</span>close()
+</pre></div>
+
+</div><!-- end of jb-input-code jb-render -->
+
+</div>
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-72879fbd-1273-43c4-9b39-0fb7b7eaac23" ><span id="id-72879fbd-1273-43c4-9b39-0fb7b7eaac23"><img id="img-id-72879fbd-1273-43c4-9b39-0fb7b7eaac23"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-5382a978-d765-4dc5-823b-d2a35705241c" ><span id="id-5382a978-d765-4dc5-823b-d2a35705241c"><img id="img-id-5382a978-d765-4dc5-823b-d2a35705241c" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00007_frag_00001" data-state="slide_00007_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+
+<div class="jb-output-code jb-render">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-output jb-render">
+
+<h1>Edge Detection</h1>
+
+<span id="id-6898fc7c-4c99-42b3-a97c-1cf6f41bedff" ><span id="id-6898fc7c-4c99-42b3-a97c-1cf6f41bedff"><img id="img-id-6898fc7c-4c99-42b3-a97c-1cf6f41bedff"     src="assets/images/edge.svg"/></span>
+</span>
+</div><!-- end of jb-output jb-render -->
+</div><!-- end of jb-output-code jb-render -->
+
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-95914364-d1a6-4d2d-95ad-f1106381dbf4" ><span id="id-95914364-d1a6-4d2d-95ad-f1106381dbf4"><img id="img-id-95914364-d1a6-4d2d-95ad-f1106381dbf4"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-c1a73c63-3719-48fe-8e1f-bf690da353c0" ><span id="id-c1a73c63-3719-48fe-8e1f-bf690da353c0"><img id="img-id-c1a73c63-3719-48fe-8e1f-bf690da353c0" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00008_frag_00001" data-state="slide_00008_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+
+<div class="jb-output-code jb-render">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-output jb-render">
+<div class="document" id="hough-lines-motivation">
+<h1 class="title">Hough Lines Motivation</h1>
+<ul class="simple">
+<li>Initially, Hough developed the Hough transform to deal with the problem of detecting
+lines in an image.</li>
+<li>To reason about lines in images requires reasoning about collections of pixels.
+To form a particular shape, the pixels need to be arranged in such a way, that they form the shape.
+The output of the procedure is a line.</li>
+</ul>
+</div>
+
+</div><!-- end of jb-output jb-render -->
+</div><!-- end of jb-output-code jb-render -->
+
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-582ec9d9-ed01-4816-868c-04341899b1d4" ><span id="id-582ec9d9-ed01-4816-868c-04341899b1d4"><img id="img-id-582ec9d9-ed01-4816-868c-04341899b1d4"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-b2cceb83-996a-4a3a-8f06-957372cf54c8" ><span id="id-b2cceb83-996a-4a3a-8f06-957372cf54c8"><img id="img-id-b2cceb83-996a-4a3a-8f06-957372cf54c8" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00009_frag_00001" data-state="slide_00009_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+
+<div class="jb-output-code jb-render">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-output jb-render">
+<div class="document">
+<ul>
+<li><p class="first">A line can be represented in many different ways. Representing a line as an array of pixels is a
+cumbersome and inefficient approach. Instead, mathematically lines are often represented by a slope and
+line intercept (slope-intercept format).</p>
+<blockquote>
+<p>y=ax+b</p>
+</blockquote>
+</li>
+<li><p class="first">The brilliant insight by Hough in 1959, was to realize that a collection of
+points can be converted to the mathematical representation by converting each
+pixel into the Hough space, that is the space of parameters that map to a line.</p>
+</li>
+</ul>
+</div>
+
+</div><!-- end of jb-output jb-render -->
+</div><!-- end of jb-output-code jb-render -->
+
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-fc722f7c-8b9a-4545-82ca-4ebbc3cfe71d" ><span id="id-fc722f7c-8b9a-4545-82ca-4ebbc3cfe71d"><img id="img-id-fc722f7c-8b9a-4545-82ca-4ebbc3cfe71d"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-7bda2e29-85ce-426c-b740-0ba27145757b" ><span id="id-7bda2e29-85ce-426c-b740-0ba27145757b"><img id="img-id-7bda2e29-85ce-426c-b740-0ba27145757b" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00010_frag_00001" data-state="slide_00010_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+
+<div class="jb-output-code jb-render">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-output jb-render">
+<div class="document">
+<div class="jb-text docutils container">
+<ul>
+<li><p class="first">Given an edge pixel at position  (xp,yp) , we assume that this pixel is part
+of a line. So we know that</p>
+<blockquote>
+<p>yp=a∗xp+b</p>
+</blockquote>
+<p>for some line parameters  a  (slope) and  b  (line intercept, that is the point
+where the line intersects with the vertical line  x=0 ).</p>
+</li>
+<li><p class="first">Assume that we know that the slope of the line a, then we can calculate what the
+line intercept of the line  b  must be, given that a point  xp , yp  is on that line with slope a.</p>
+<blockquote>
+<p>b=−a∗xp+yp</p>
+</blockquote>
+</li>
+</ul>
+<p>The equation above is the equation for a line in the Hough space with slope  −xp
+and line intercept  yp .</p>
+</div>
+</div>
+
+</div><!-- end of jb-output jb-render -->
+</div><!-- end of jb-output-code jb-render -->
+
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-108d6b8f-0d34-4263-a786-6f95aea15aab" ><span id="id-108d6b8f-0d34-4263-a786-6f95aea15aab"><img id="img-id-108d6b8f-0d34-4263-a786-6f95aea15aab"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-bd783789-4dd0-4d7a-946e-77ac7a8ea8de" ><span id="id-bd783789-4dd0-4d7a-946e-77ac7a8ea8de"><img id="img-id-bd783789-4dd0-4d7a-946e-77ac7a8ea8de" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00011_frag_00001" data-state="slide_00011_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+<div class="jb-input jb-render jb-code" style="text-align:center">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-input-code jb-render">
+<div style="font-size:0.5em"><!-- start of style="font-size:0.5em" -->
+<div class="highlight" style="background: #f8f8f8; color:#101010;display=inline-block;"><pre style="line-height: 125%"><span></span>p1 <span style="color: #666666">=</span> [<span style="color: #666666">4</span>, <span style="color: #666666">5</span>] <span style="color: #408080; font-style: italic">#@param {type:&quot;raw&quot;}</span>
+
+p1 <span style="color: #666666">=</span> np<span style="color: #666666">.</span>array(p1)
+
+fig <span style="color: #666666">=</span> plt<span style="color: #666666">.</span>figure()
+
+ax1 <span style="color: #666666">=</span> fig<span style="color: #666666">.</span>add_subplot(<span style="color: #666666">1</span>,<span style="color: #666666">2</span>,<span style="color: #666666">1</span>)
+ax1<span style="color: #666666">.</span>set_title(<span style="color: #BA2121">&#39;XY Space&#39;</span>)
+ax1<span style="color: #666666">.</span>set_xlim((<span style="color: #666666">0</span>,<span style="color: #666666">10</span>))
+ax1<span style="color: #666666">.</span>set_ylim((<span style="color: #666666">0</span>,<span style="color: #666666">10</span>))
+ax1<span style="color: #666666">.</span>set_xlabel(<span style="color: #BA2121">&#39;x&#39;</span>)
+ax1<span style="color: #666666">.</span>set_ylabel(<span style="color: #BA2121">&#39;y&#39;</span>)
+
+offset <span style="color: #666666">=</span> np<span style="color: #666666">.</span>array([<span style="color: #666666">1.5</span>,<span style="color: #666666">1</span>])
+
+ax1<span style="color: #666666">.</span>plot(p1[<span style="color: #666666">0</span>], p1[<span style="color: #666666">1</span>], <span style="color: #BA2121">&#39;b.&#39;</span>, markersize<span style="color: #666666">=20</span>)
+ax1<span style="color: #666666">.</span>annotate(<span style="color: #BA2121">&#39;p1&#39;</span>, xy <span style="color: #666666">=</span> p1, xytext<span style="color: #666666">=</span>p1<span style="color: #666666">+</span>offset, arrowprops<span style="color: #666666">=</span><span style="color: #008000">dict</span>(facecolor<span style="color: #666666">=</span><span style="color: #BA2121">&#39;black&#39;</span>, shrink<span style="color: #666666">=0.1</span>))
+
+ax2 <span style="color: #666666">=</span> fig<span style="color: #666666">.</span>add_subplot(<span style="color: #666666">1</span>,<span style="color: #666666">2</span>,<span style="color: #666666">2</span>)
+ax2<span style="color: #666666">.</span>set_title(<span style="color: #BA2121">&#39;Hough Space&#39;</span>)
+ax2<span style="color: #666666">.</span>set_xlabel(<span style="color: #BA2121">&#39;a&#39;</span>)
+ax2<span style="color: #666666">.</span>set_ylabel(<span style="color: #BA2121">&#39;b&#39;</span>)
+
+hmin <span style="color: #666666">=</span> <span style="color: #008000; font-weight: bold">None</span>
+hmax <span style="color: #666666">=</span> <span style="color: #008000; font-weight: bold">None</span>
+
+linestyles<span style="color: #666666">=</span>[<span style="color: #BA2121">&#39;b-&#39;</span>, <span style="color: #BA2121">&#39;r--&#39;</span>, <span style="color: #BA2121">&#39;g-.&#39;</span>]
+points <span style="color: #666666">=</span> [ [<span style="color: #666666">0</span>,<span style="color: #666666">2</span>], [<span style="color: #666666">0</span>,<span style="color: #666666">4</span>], [<span style="color: #666666">0</span>,<span style="color: #666666">8</span>] ]
+<span style="color: #008000; font-weight: bold">for</span> i <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>( <span style="color: #008000">len</span>(points) ):
+  x1,y1 <span style="color: #666666">=</span> points[i]
+  pL1 <span style="color: #666666">=</span> np<span style="color: #666666">.</span>array([x1,y1])
+  d <span style="color: #666666">=</span> p1 <span style="color: #666666">-</span> pL1
+  pL2 <span style="color: #666666">=</span> pL1 <span style="color: #666666">+</span> d <span style="color: #666666">*</span> <span style="color: #666666">10</span>
+  <span style="color: #408080; font-style: italic">#print(pL1, pL2, d)</span>
+  a1 <span style="color: #666666">=</span> d[<span style="color: #666666">1</span>]<span style="color: #666666">/</span>d[<span style="color: #666666">0</span>]
+  b1 <span style="color: #666666">=</span> y1
+  <span style="color: #008000; font-weight: bold">if</span> ( hmin <span style="color: #AA22FF; font-weight: bold">is</span> <span style="color: #008000; font-weight: bold">None</span> ) <span style="color: #AA22FF; font-weight: bold">or</span> ( a1 <span style="color: #666666">&lt;</span> hmin[<span style="color: #666666">0</span>]):
+    hmin <span style="color: #666666">=</span> [ a1, b1 ]
+  <span style="color: #008000; font-weight: bold">if</span> ( hmax <span style="color: #AA22FF; font-weight: bold">is</span> <span style="color: #008000; font-weight: bold">None</span> ) <span style="color: #AA22FF; font-weight: bold">or</span> ( a1 <span style="color: #666666">&gt;</span> hmin[<span style="color: #666666">0</span>] ):
+    hmax <span style="color: #666666">=</span> [a1, b1 ]
+  ax1<span style="color: #666666">.</span>plot( [pL1[<span style="color: #666666">0</span>], pL2[<span style="color: #666666">0</span>]], [ pL1[<span style="color: #666666">1</span>], pL2[<span style="color: #666666">1</span>] ], linestyles[i], label <span style="color: #666666">=</span> <span style="color: #BA2121">&quot;y = </span><span style="color: #BB6688; font-weight: bold">{0:5.2f}</span><span style="color: #BA2121">x + </span><span style="color: #BB6688; font-weight: bold">{1:5.2f}</span><span style="color: #BA2121">&quot;</span><span style="color: #666666">.</span>format(a1, b1) )
+  ax2<span style="color: #666666">.</span>plot( [a1], [b1], linestyles[i][<span style="color: #666666">0</span>]<span style="color: #666666">+</span><span style="color: #BA2121">&#39;.&#39;</span>, markersize<span style="color: #666666">=20</span>)
+
+<span style="color: #008000; font-weight: bold">if</span> ( hmin <span style="color: #AA22FF; font-weight: bold">is</span> <span style="color: #AA22FF; font-weight: bold">not</span> <span style="color: #008000; font-weight: bold">None</span> ) <span style="color: #AA22FF; font-weight: bold">and</span> ( hmax <span style="color: #AA22FF; font-weight: bold">is</span> <span style="color: #AA22FF; font-weight: bold">not</span> <span style="color: #008000; font-weight: bold">None</span> ):
+  ax2<span style="color: #666666">.</span>plot([hmin[<span style="color: #666666">0</span>], hmax[<span style="color: #666666">0</span>]], [hmin[<span style="color: #666666">1</span>], hmax[<span style="color: #666666">1</span>]], <span style="color: #BA2121">&#39;k-&#39;</span>)
+ax1<span style="color: #666666">.</span>legend()
+<span style="color: #408080; font-style: italic">#ax2.legend()</span>
+
+h1 <span style="color: #666666">=</span> addJBFigure( <span style="color: #BA2121">&quot;h1&quot;</span>, <span style="color: #666666">0</span>, <span style="color: #666666">0</span>, fig )
+plt<span style="color: #666666">.</span>close()
+</pre></div>
+
+</div><!-- end of style="font-size:0.5em" -->
+</div><!-- end of jb-input-code jb-render -->
+
+</div>
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-1f42187b-9f0d-4016-a382-7210557c5321" ><span id="id-1f42187b-9f0d-4016-a382-7210557c5321"><img id="img-id-1f42187b-9f0d-4016-a382-7210557c5321"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-57e02701-4dad-4a6c-a23e-d28e0ab79089" ><span id="id-57e02701-4dad-4a6c-a23e-d28e0ab79089"><img id="img-id-57e02701-4dad-4a6c-a23e-d28e0ab79089" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00012_frag_00001" data-state="slide_00012_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+
+<div class="jb-output-code jb-render">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-output jb-render">
+
+<h1>Hough Example</h1>
+
+<span id="id-d348df0d-3634-42e6-8b7e-1e2600ab35c7" ><span id="id-d348df0d-3634-42e6-8b7e-1e2600ab35c7"><img id="img-id-d348df0d-3634-42e6-8b7e-1e2600ab35c7"     src="assets/images/h1.svg"/></span>
+</span>
+</div><!-- end of jb-output jb-render -->
+</div><!-- end of jb-output-code jb-render -->
+
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-a5505354-5807-46fe-af11-ac03747efa4a" ><span id="id-a5505354-5807-46fe-af11-ac03747efa4a"><img id="img-id-a5505354-5807-46fe-af11-ac03747efa4a"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-357257dd-1898-4dcd-ab28-6df9878705a5" ><span id="id-357257dd-1898-4dcd-ab28-6df9878705a5"><img id="img-id-357257dd-1898-4dcd-ab28-6df9878705a5" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00013_frag_00001" data-state="slide_00013_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+
+<div class="jb-output-code jb-render">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-output jb-render">
+<div class="document">
+<ul class="simple">
+<li>As shown in the figure above, all possible lines through a point  p1  result
+in a line in the Hough space.</li>
+<li>If we now add another point  p2 , then all possible lines through that point
+will result in a different line in the Hough space.</li>
+<li>The intersection of those two lines will give us a point in the Hough space,
+which corresponds to the line that goes through both points  p1 and  p2 .</li>
+</ul>
+</div>
+
+</div><!-- end of jb-output jb-render -->
+</div><!-- end of jb-output-code jb-render -->
+
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-8c4d8f2d-1269-4020-80bd-fd945e9636cd" ><span id="id-8c4d8f2d-1269-4020-80bd-fd945e9636cd"><img id="img-id-8c4d8f2d-1269-4020-80bd-fd945e9636cd"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-022860a1-91e7-4f63-8f66-eded37e12eb3" ><span id="id-022860a1-91e7-4f63-8f66-eded37e12eb3"><img id="img-id-022860a1-91e7-4f63-8f66-eded37e12eb3" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00014_frag_00001" data-state="slide_00014_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+<div class="jb-input jb-render jb-code" style="text-align:center">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-input-code jb-render">
+<div style="font-size:0.5em"><!-- start of style="font-size:0.5em" -->
+<div class="highlight" style="background: #f8f8f8; color:#101010;display=inline-block;"><pre style="line-height: 125%"><span></span>p1 <span style="color: #666666">=</span> [<span style="color: #666666">3</span>, <span style="color: #666666">5</span>] <span style="color: #408080; font-style: italic">#@param {type:&quot;raw&quot;}</span>
+p2 <span style="color: #666666">=</span> [<span style="color: #666666">5</span>, <span style="color: #666666">4</span>] <span style="color: #408080; font-style: italic">#@param {type:&quot;raw&quot;}</span>
+
+p1 <span style="color: #666666">=</span> np<span style="color: #666666">.</span>array(p1)
+p2 <span style="color: #666666">=</span> np<span style="color: #666666">.</span>array(p2)
+
+fig <span style="color: #666666">=</span> plt<span style="color: #666666">.</span>figure()
+
+ax1 <span style="color: #666666">=</span> fig<span style="color: #666666">.</span>add_subplot(<span style="color: #666666">1</span>,<span style="color: #666666">2</span>,<span style="color: #666666">1</span>)
+ax1<span style="color: #666666">.</span>set_title(<span style="color: #BA2121">&#39;XY Space&#39;</span>)
+ax1<span style="color: #666666">.</span>set_xlim((<span style="color: #666666">0</span>,<span style="color: #666666">10</span>))
+ax1<span style="color: #666666">.</span>set_ylim((<span style="color: #666666">0</span>,<span style="color: #666666">10</span>))
+ax1<span style="color: #666666">.</span>set_xlabel(<span style="color: #BA2121">&#39;x&#39;</span>)
+ax1<span style="color: #666666">.</span>set_ylabel(<span style="color: #BA2121">&#39;y&#39;</span>)
+
+offset <span style="color: #666666">=</span> np<span style="color: #666666">.</span>array([<span style="color: #666666">1.5</span>,<span style="color: #666666">1</span>])
+
+ax1<span style="color: #666666">.</span>plot(p1[<span style="color: #666666">0</span>], p1[<span style="color: #666666">1</span>], <span style="color: #BA2121">&#39;b.&#39;</span>, markersize<span style="color: #666666">=20</span>)
+ax1<span style="color: #666666">.</span>annotate(<span style="color: #BA2121">&#39;p1&#39;</span>, xy <span style="color: #666666">=</span> p1, xytext<span style="color: #666666">=</span>p1<span style="color: #666666">+</span>offset, arrowprops<span style="color: #666666">=</span><span style="color: #008000">dict</span>(facecolor<span style="color: #666666">=</span><span style="color: #BA2121">&#39;black&#39;</span>, shrink<span style="color: #666666">=0.1</span>))
+ax1<span style="color: #666666">.</span>plot(p2[<span style="color: #666666">0</span>], p2[<span style="color: #666666">1</span>], <span style="color: #BA2121">&#39;b.&#39;</span>, markersize<span style="color: #666666">=20</span>)
+ax1<span style="color: #666666">.</span>annotate(<span style="color: #BA2121">&#39;p2&#39;</span>, xy <span style="color: #666666">=</span> p2, xytext<span style="color: #666666">=</span>p2<span style="color: #666666">+</span>offset, arrowprops<span style="color: #666666">=</span><span style="color: #008000">dict</span>(facecolor<span style="color: #666666">=</span><span style="color: #BA2121">&#39;black&#39;</span>, shrink<span style="color: #666666">=0.1</span>))
+
+ax2 <span style="color: #666666">=</span> fig<span style="color: #666666">.</span>add_subplot(<span style="color: #666666">1</span>,<span style="color: #666666">2</span>,<span style="color: #666666">2</span>)
+ax2<span style="color: #666666">.</span>set_title(<span style="color: #BA2121">&#39;Hough Space&#39;</span>)
+ax2<span style="color: #666666">.</span>set_xlabel(<span style="color: #BA2121">&#39;a&#39;</span>)
+ax2<span style="color: #666666">.</span>set_ylabel(<span style="color: #BA2121">&#39;b&#39;</span>)
+
+hmin <span style="color: #666666">=</span> <span style="color: #008000; font-weight: bold">None</span>
+hmax <span style="color: #666666">=</span> <span style="color: #008000; font-weight: bold">None</span>
+
+linestyles<span style="color: #666666">=</span>[<span style="color: #BA2121">&#39;b-&#39;</span>, <span style="color: #BA2121">&#39;r--&#39;</span>, <span style="color: #BA2121">&#39;g-.&#39;</span>]
+points <span style="color: #666666">=</span> [ [<span style="color: #666666">0</span>,<span style="color: #666666">2</span>], [<span style="color: #666666">0</span>,<span style="color: #666666">4</span>], [<span style="color: #666666">0</span>,<span style="color: #666666">8</span>] ]
+<span style="color: #008000; font-weight: bold">for</span> i <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>( <span style="color: #008000">len</span>(points) ):
+  x1,y1 <span style="color: #666666">=</span> points[i]
+  pL1 <span style="color: #666666">=</span> np<span style="color: #666666">.</span>array([x1,y1])
+  d <span style="color: #666666">=</span> p1 <span style="color: #666666">-</span> pL1
+  pL2 <span style="color: #666666">=</span> pL1 <span style="color: #666666">+</span> d <span style="color: #666666">*</span> <span style="color: #666666">10</span>
+  <span style="color: #408080; font-style: italic">#print(pL1, pL2, d)</span>
+  a1 <span style="color: #666666">=</span> d[<span style="color: #666666">1</span>]<span style="color: #666666">/</span>d[<span style="color: #666666">0</span>]
+  b1 <span style="color: #666666">=</span> y1
+  <span style="color: #008000; font-weight: bold">if</span> ( hmin <span style="color: #AA22FF; font-weight: bold">is</span> <span style="color: #008000; font-weight: bold">None</span> ) <span style="color: #AA22FF; font-weight: bold">or</span> ( a1 <span style="color: #666666">&lt;</span> hmin[<span style="color: #666666">0</span>]):
+    hmin <span style="color: #666666">=</span> [ a1, b1 ]
+  <span style="color: #008000; font-weight: bold">if</span> ( hmax <span style="color: #AA22FF; font-weight: bold">is</span> <span style="color: #008000; font-weight: bold">None</span> ) <span style="color: #AA22FF; font-weight: bold">or</span> ( a1 <span style="color: #666666">&gt;</span> hmin[<span style="color: #666666">0</span>] ):
+    hmax <span style="color: #666666">=</span> [a1, b1 ]
+  ax1<span style="color: #666666">.</span>plot( [pL1[<span style="color: #666666">0</span>], pL2[<span style="color: #666666">0</span>]], [ pL1[<span style="color: #666666">1</span>], pL2[<span style="color: #666666">1</span>] ], linestyles[i], label <span style="color: #666666">=</span> <span style="color: #BA2121">&quot;y = </span><span style="color: #BB6688; font-weight: bold">{0:5.2f}</span><span style="color: #BA2121">x + </span><span style="color: #BB6688; font-weight: bold">{1:5.2f}</span><span style="color: #BA2121">&quot;</span><span style="color: #666666">.</span>format(a1, b1) )
+  ax2<span style="color: #666666">.</span>plot( [a1], [b1], linestyles[i][<span style="color: #666666">0</span>]<span style="color: #666666">+</span><span style="color: #BA2121">&#39;.&#39;</span>, markersize<span style="color: #666666">=20</span>)
+
+<span style="color: #008000; font-weight: bold">if</span> ( hmin <span style="color: #AA22FF; font-weight: bold">is</span> <span style="color: #AA22FF; font-weight: bold">not</span> <span style="color: #008000; font-weight: bold">None</span> ) <span style="color: #AA22FF; font-weight: bold">and</span> ( hmax <span style="color: #AA22FF; font-weight: bold">is</span> <span style="color: #AA22FF; font-weight: bold">not</span> <span style="color: #008000; font-weight: bold">None</span> ):
+  ax2<span style="color: #666666">.</span>plot([hmin[<span style="color: #666666">0</span>], hmax[<span style="color: #666666">0</span>]], [hmin[<span style="color: #666666">1</span>], hmax[<span style="color: #666666">1</span>]], <span style="color: #BA2121">&#39;k-&#39;</span>)
+
+linestyles<span style="color: #666666">=</span>[<span style="color: #BA2121">&#39;b:&#39;</span>, <span style="color: #BA2121">&#39;r-&#39;</span>, <span style="color: #BA2121">&#39;g-.&#39;</span>]
+points <span style="color: #666666">=</span> [ [<span style="color: #666666">0</span>,<span style="color: #666666">3</span>], [<span style="color: #666666">0</span>,<span style="color: #666666">5</span>], [<span style="color: #666666">0</span>,<span style="color: #666666">10</span>] ]
+
+hmin <span style="color: #666666">=</span> <span style="color: #008000; font-weight: bold">None</span>
+hmax <span style="color: #666666">=</span> <span style="color: #008000; font-weight: bold">None</span>
+
+<span style="color: #008000; font-weight: bold">for</span> i <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>( <span style="color: #008000">len</span>(points) ):
+  x1,y1 <span style="color: #666666">=</span> points[i]
+  pL1 <span style="color: #666666">=</span> np<span style="color: #666666">.</span>array([x1,y1])
+  d <span style="color: #666666">=</span> p2 <span style="color: #666666">-</span> pL1
+  pL2 <span style="color: #666666">=</span> pL1 <span style="color: #666666">+</span> d <span style="color: #666666">*</span> <span style="color: #666666">10</span>
+  <span style="color: #408080; font-style: italic">#print(pL1, pL2, d)</span>
+  a1 <span style="color: #666666">=</span> d[<span style="color: #666666">1</span>]<span style="color: #666666">/</span>d[<span style="color: #666666">0</span>]
+  b1 <span style="color: #666666">=</span> y1
+  <span style="color: #008000; font-weight: bold">if</span> ( hmin <span style="color: #AA22FF; font-weight: bold">is</span> <span style="color: #008000; font-weight: bold">None</span> ) <span style="color: #AA22FF; font-weight: bold">or</span> ( a1 <span style="color: #666666">&lt;</span> hmin[<span style="color: #666666">0</span>]):
+    hmin <span style="color: #666666">=</span> [ a1, b1 ]
+  <span style="color: #008000; font-weight: bold">if</span> ( hmax <span style="color: #AA22FF; font-weight: bold">is</span> <span style="color: #008000; font-weight: bold">None</span> ) <span style="color: #AA22FF; font-weight: bold">or</span> ( a1 <span style="color: #666666">&gt;</span> hmin[<span style="color: #666666">0</span>] ):
+    hmax <span style="color: #666666">=</span> [a1, b1 ]
+  ax1<span style="color: #666666">.</span>plot( [pL1[<span style="color: #666666">0</span>], pL2[<span style="color: #666666">0</span>]], [ pL1[<span style="color: #666666">1</span>], pL2[<span style="color: #666666">1</span>] ], linestyles[i], label <span style="color: #666666">=</span> <span style="color: #BA2121">&quot;y = </span><span style="color: #BB6688; font-weight: bold">{0:5.2f}</span><span style="color: #BA2121">x + </span><span style="color: #BB6688; font-weight: bold">{1:5.2f}</span><span style="color: #BA2121">&quot;</span><span style="color: #666666">.</span>format(a1, b1) )
+  ax2<span style="color: #666666">.</span>plot( [a1], [b1], linestyles[i][<span style="color: #666666">0</span>]<span style="color: #666666">+</span><span style="color: #BA2121">&#39;.&#39;</span>, markersize<span style="color: #666666">=20</span>)
+
+<span style="color: #008000; font-weight: bold">if</span> ( hmin <span style="color: #AA22FF; font-weight: bold">is</span> <span style="color: #AA22FF; font-weight: bold">not</span> <span style="color: #008000; font-weight: bold">None</span> ) <span style="color: #AA22FF; font-weight: bold">and</span> ( hmax <span style="color: #AA22FF; font-weight: bold">is</span> <span style="color: #AA22FF; font-weight: bold">not</span> <span style="color: #008000; font-weight: bold">None</span> ):
+  ax2<span style="color: #666666">.</span>plot([hmin[<span style="color: #666666">0</span>], hmax[<span style="color: #666666">0</span>]], [hmin[<span style="color: #666666">1</span>], hmax[<span style="color: #666666">1</span>]], <span style="color: #BA2121">&#39;k-&#39;</span>)
+  
+ax1<span style="color: #666666">.</span>legend()
+
+
+<span style="color: #408080; font-style: italic">#ax2.legend()</span>
+
+h2 <span style="color: #666666">=</span> addJBFigure(<span style="color: #BA2121">&quot;h2&quot;</span>, <span style="color: #666666">0</span>, <span style="color: #666666">0</span>, fig)
+plt<span style="color: #666666">.</span>close()
+</pre></div>
+
+</div><!-- end of style="font-size:0.5em" -->
+</div><!-- end of jb-input-code jb-render -->
+
+</div>
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-7a269d07-5622-4311-ae6c-4a4e0722dedf" ><span id="id-7a269d07-5622-4311-ae6c-4a4e0722dedf"><img id="img-id-7a269d07-5622-4311-ae6c-4a4e0722dedf"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-8289f747-5280-4cfa-833b-decc9c3b822d" ><span id="id-8289f747-5280-4cfa-833b-decc9c3b822d"><img id="img-id-8289f747-5280-4cfa-833b-decc9c3b822d" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00015_frag_00001" data-state="slide_00015_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+
+<div class="jb-output-code jb-render">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-output jb-render">
+
+<h1>Hough Lines</h1>
+
+<span id="id-5b9914ab-6708-461a-bc58-520a0844791e" ><span id="id-5b9914ab-6708-461a-bc58-520a0844791e"><img id="img-id-5b9914ab-6708-461a-bc58-520a0844791e"     src="assets/images/h2.svg"/></span>
+</span>
+</div><!-- end of jb-output jb-render -->
+</div><!-- end of jb-output-code jb-render -->
+
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-aeb17759-bde3-448e-a057-17763ce50884" ><span id="id-aeb17759-bde3-448e-a057-17763ce50884"><img id="img-id-aeb17759-bde3-448e-a057-17763ce50884"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-7063956a-cd8d-4c6f-84c5-a6b469df8816" ><span id="id-7063956a-cd8d-4c6f-84c5-a6b469df8816"><img id="img-id-7063956a-cd8d-4c6f-84c5-a6b469df8816" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00016_frag_00001" data-state="slide_00016_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+
+<div class="jb-output-code jb-render">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-output jb-render">
+<div class="document">
+<ul class="simple">
+<li>However, since there will be noise in the vision system, the various lines (one for each edge pixel)
+in the Hough space will usually not intersect at exactly one point.</li>
+<li>One solution to this problem would be to calculate the point that is closest
+to all lines, or the point that minimizes the squared distance to all lines.</li>
+<li>This approach does not work if there are multiple lines in an image.
+In this case, there would be multiple intersection points and the point closest to
+all of them is in general useless.</li>
+</ul>
+</div>
+
+</div><!-- end of jb-output jb-render -->
+</div><!-- end of jb-output-code jb-render -->
+
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-27b4d12f-ffe7-463e-8b3b-173127856ded" ><span id="id-27b4d12f-ffe7-463e-8b3b-173127856ded"><img id="img-id-27b4d12f-ffe7-463e-8b3b-173127856ded"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-63411860-9d82-4c73-b7df-b257b4c22273" ><span id="id-63411860-9d82-4c73-b7df-b257b4c22273"><img id="img-id-63411860-9d82-4c73-b7df-b257b4c22273" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00017_frag_00001" data-state="slide_00017_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+
+<div class="jb-output-code jb-render">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-output jb-render">
+<div class="document">
+<ul class="simple">
+<li>Hough overcame this problem by discretizing the Hough space and using an accumulator.
+So the Hough space is a table of entries, which are initialized to 0.</li>
+<li>For every edge pixel  e , the algorithm iterates through the discretization of  a
+and calculates the corresponding parameters  b . The entry in the table for  a , b
+is then incremented. One can interpret this, as an edge pixel voting for possible lines.</li>
+<li>After all edge pixels have been processed, the Hough line algorithm returns the line
+corresponding to the Hough table entry with the maximum number of votes.</li>
+</ul>
+</div>
+
+</div><!-- end of jb-output jb-render -->
+</div><!-- end of jb-output-code jb-render -->
+
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-89c1caf7-76d8-4e16-8342-827c94e03fa0" ><span id="id-89c1caf7-76d8-4e16-8342-827c94e03fa0"><img id="img-id-89c1caf7-76d8-4e16-8342-827c94e03fa0"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-f215a771-9537-40b1-b635-828b3197b2eb" ><span id="id-f215a771-9537-40b1-b635-828b3197b2eb"><img id="img-id-f215a771-9537-40b1-b635-828b3197b2eb" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00018_frag_00001" data-state="slide_00018_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+
+<div class="jb-output-code jb-render">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-output jb-render">
+
+<h1>Parametric equation for a line</h1>
+
+<div class="jb-text">
+<p>The slope-intercept form of the equation is a bad choice as accumulator parameter
+since it ranges from 0 to \(\infty\)</p>
+
+<p>Instead we use the following parameterization:</p>
+
+\[
+  \rho = \cos(\alpha)x + \sin(\alpha)y
+\]
+</div>
+
+<span id="id-579844b1-17a5-4ec8-895a-69560129266c" ><span id="id-579844b1-17a5-4ec8-895a-69560129266c"><img id="img-id-579844b1-17a5-4ec8-895a-69560129266c"     src="assets/images/r1.svg"/></span>
+</span>
+</div><!-- end of jb-output jb-render -->
+</div><!-- end of jb-output-code jb-render -->
+
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-5069f820-3504-4773-bcff-1184833144d1" ><span id="id-5069f820-3504-4773-bcff-1184833144d1"><img id="img-id-5069f820-3504-4773-bcff-1184833144d1"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-99ea28a2-396f-4683-b367-6e1d30ceae9a" ><span id="id-99ea28a2-396f-4683-b367-6e1d30ceae9a"><img id="img-id-99ea28a2-396f-4683-b367-6e1d30ceae9a" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00019_frag_00001" data-state="slide_00019_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+<div class="jb-input jb-render jb-code" style="text-align:center">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-input-code jb-render">
+<div style="font-size:0.5m"><!-- start of style="font-size:0.5m" -->
+<div class="highlight" style="background: #f8f8f8; color:#101010;display=inline-block;"><pre style="line-height: 125%"><span></span>kernel <span style="color: #666666">=</span> <span style="color: #666666">7</span> <span style="color: #408080; font-style: italic">#@param [&quot;3&quot;, &quot;5&quot;, &quot;7&quot;, &quot;9&quot;, &quot;11&quot;] {type:&quot;raw&quot;}</span>
+THRESHOLD <span style="color: #666666">=</span>  <span style="color: #666666">0.3</span><span style="color: #408080; font-style: italic">#@param</span>
+
+gray <span style="color: #666666">=</span> cv2<span style="color: #666666">.</span>cvtColor( img,  cv2<span style="color: #666666">.</span>COLOR_RGB2GRAY );
+
+sobelX <span style="color: #666666">=</span> cv2<span style="color: #666666">.</span>Sobel( gray, cv2<span style="color: #666666">.</span>CV_32F, <span style="color: #666666">1</span>, <span style="color: #666666">0</span>, ksize<span style="color: #666666">=</span> kernel)
+sobelY <span style="color: #666666">=</span> cv2<span style="color: #666666">.</span>Sobel( gray, cv2<span style="color: #666666">.</span>CV_32F, <span style="color: #666666">0</span>, <span style="color: #666666">1</span>, ksize<span style="color: #666666">=</span> kernel)
+
+edges <span style="color: #666666">=</span> np<span style="color: #666666">.</span>abs(sobelX) <span style="color: #666666">+</span> np<span style="color: #666666">.</span>abs(sobelY)
+edges <span style="color: #666666">=</span> edges <span style="color: #666666">/</span> np<span style="color: #666666">.</span>max(edges)
+
+fig <span style="color: #666666">=</span> plt<span style="color: #666666">.</span>figure( figsize<span style="color: #666666">=</span>( <span style="color: #666666">15</span>, <span style="color: #666666">15</span>) )
+ax1 <span style="color: #666666">=</span> fig<span style="color: #666666">.</span>add_subplot(<span style="color: #666666">2</span>,<span style="color: #666666">2</span>,<span style="color: #666666">1</span>)
+ax1<span style="color: #666666">.</span>set_title(<span style="color: #BA2121">&#39;Edge Detection&#39;</span>)
+
+thres <span style="color: #666666">=</span> np<span style="color: #666666">.</span>zeros( edges<span style="color: #666666">.</span>shape )
+
+idx <span style="color: #666666">=</span> edges <span style="color: #666666">&gt;</span> THRESHOLD
+<span style="color: #008000">print</span>(<span style="color: #BA2121">&#39;idx&#39;</span>, idx[<span style="color: #666666">0</span>:<span style="color: #666666">10</span>])
+thres[idx] <span style="color: #666666">=</span> <span style="color: #666666">1.0</span>
+
+ax1<span style="color: #666666">.</span>imshow(edges, cmap<span style="color: #666666">=</span><span style="color: #BA2121">&quot;gray&quot;</span>)
+
+ax2 <span style="color: #666666">=</span> fig<span style="color: #666666">.</span>add_subplot(<span style="color: #666666">2</span>,<span style="color: #666666">2</span>,<span style="color: #666666">2</span>)
+ax2<span style="color: #666666">.</span>set_title(<span style="color: #BA2121">&#39;Edge Pixels&#39;</span>)
+ax2<span style="color: #666666">.</span>hist(edges)
+
+ax3 <span style="color: #666666">=</span> fig<span style="color: #666666">.</span>add_subplot(<span style="color: #666666">2</span>,<span style="color: #666666">2</span>,<span style="color: #666666">3</span>)
+ax3<span style="color: #666666">.</span>set_title(<span style="color: #BA2121">&quot;Threshold Edge Pixels&quot;</span>)
+ax3<span style="color: #666666">.</span>imshow( thres, cmap<span style="color: #666666">=</span><span style="color: #BA2121">&quot;gray&quot;</span> )
+
+img_ <span style="color: #666666">=</span> addJBFigure(<span style="color: #BA2121">&quot;edges3&quot;</span>, <span style="color: #666666">0</span>, <span style="color: #666666">0</span>, fig )
+plt<span style="color: #666666">.</span>close()
+</pre></div>
+
+</div><!-- end of style="font-size:0.5m" -->
+</div><!-- end of jb-input-code jb-render -->
+
+</div>
+<div class="jb-print jb-render">
+<div style="font-size:0.5m"><!-- start of style="font-size:0.5m" -->
+<div class="jb-output jb-render code" style="text-align:center">
+<div class="jb-stdout code" style="display:inline-block; width:90%">
+<pre style="font-size:0.5m">
+idx [[False False False ... False False False]
+ [False False False ... False False False]
+ [False False False ... False False False]
+ ...
+ [False False False ... False False False]
+ [False False False ... False False False]
+ [False False False ... False False False]]
+</pre>
+</div>
+</div>
+
+</div><!-- end of style="font-size:0.5m" -->
+</div><!-- end of jb-print jb-render -->
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-0f1ee4d6-4afc-47a4-b80a-5094c9ac1dd6" ><span id="id-0f1ee4d6-4afc-47a4-b80a-5094c9ac1dd6"><img id="img-id-0f1ee4d6-4afc-47a4-b80a-5094c9ac1dd6"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-735dceee-566b-4c89-957b-b8a4e1eeb76a" ><span id="id-735dceee-566b-4c89-957b-b8a4e1eeb76a"><img id="img-id-735dceee-566b-4c89-957b-b8a4e1eeb76a" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00020_frag_00001" data-state="slide_00020_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+
+<div class="jb-output-code jb-render">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-output jb-render">
+
+<h1>Edge Detection + Threshold</h1>
+
+<span id="id-baf30bd5-3820-455b-845a-f3e83ab61e5e" ><span id="id-baf30bd5-3820-455b-845a-f3e83ab61e5e"><img id="img-id-baf30bd5-3820-455b-845a-f3e83ab61e5e"     src="assets/images/edges3.svg"/></span>
+</span>
+</div><!-- end of jb-output jb-render -->
+</div><!-- end of jb-output-code jb-render -->
+
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-69320b2f-1c6c-412e-8210-d1e66599f62b" ><span id="id-69320b2f-1c6c-412e-8210-d1e66599f62b"><img id="img-id-69320b2f-1c6c-412e-8210-d1e66599f62b"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-b02668f1-a9a5-4e4f-8e91-78cefc36112b" ><span id="id-b02668f1-a9a5-4e4f-8e91-78cefc36112b"><img id="img-id-b02668f1-a9a5-4e4f-8e91-78cefc36112b" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00021_frag_00001" data-state="slide_00021_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+<div class="jb-input jb-render jb-code" style="text-align:center">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-input-code jb-render">
+<div style="font-size:0.5em"><!-- start of style="font-size:0.5em" -->
+<div class="highlight" style="background: #f8f8f8; color:#101010;display=inline-block;"><pre style="line-height: 125%"><span></span><span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">findHoughLines</span>( idx, thetaBuckets, rhoBuckets, imageHypot ):
+  widthHough <span style="color: #666666">=</span> thetaBuckets
+  heightHough <span style="color: #666666">=</span> rhoBuckets
+
+  hough <span style="color: #666666">=</span> np<span style="color: #666666">.</span>zeros((heightHough, widthHough))
+  <span style="color: #008000; font-weight: bold">for</span> ppi <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(<span style="color: #008000">len</span>(idx[<span style="color: #666666">0</span>])):
+    py,px <span style="color: #666666">=</span> idx[<span style="color: #666666">0</span>,ppi], idx[<span style="color: #666666">1</span>,ppi]
+    <span style="color: #008000; font-weight: bold">for</span> theta_i, theta <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">enumerate</span>( np<span style="color: #666666">.</span>linspace( <span style="color: #666666">0</span>, <span style="color: #666666">2.0</span> <span style="color: #666666">*</span> math<span style="color: #666666">.</span>pi, widthHough ) ):
+      rho <span style="color: #666666">=</span> math<span style="color: #666666">.</span>cos(theta)<span style="color: #666666">*</span>px <span style="color: #666666">+</span> math<span style="color: #666666">.</span>sin(theta)<span style="color: #666666">*</span>py 
+      <span style="color: #008000; font-weight: bold">if</span> rho <span style="color: #666666">&gt;</span> <span style="color: #666666">0</span>:
+        rho_i <span style="color: #666666">=</span> <span style="color: #008000">int</span>(rho <span style="color: #666666">/</span> imageHypot <span style="color: #666666">*</span> rhoBuckets )
+        <span style="color: #408080; font-style: italic">#print(&#39;theta&#39;, theta, &#39;theta_i&#39;, theta_i, &#39;rho&#39;, rho, &#39;rho_i&#39;, rho_i, &#39;imageHypot&#39;, imageHypot )</span>
+        hough[rho_i, theta_i] <span style="color: #666666">=</span> hough[rho_i, theta_i] <span style="color: #666666">+</span> <span style="color: #666666">1</span> 
+  <span style="color: #008000; font-weight: bold">return</span> hough
+</pre></div>
+
+</div><!-- end of style="font-size:0.5em" -->
+</div><!-- end of jb-input-code jb-render -->
+
+</div>
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-c56b9c6b-0198-46ee-890d-022e0ba0af6c" ><span id="id-c56b9c6b-0198-46ee-890d-022e0ba0af6c"><img id="img-id-c56b9c6b-0198-46ee-890d-022e0ba0af6c"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-0cb1d354-bb58-452f-ab85-96511642fbae" ><span id="id-0cb1d354-bb58-452f-ab85-96511642fbae"><img id="img-id-0cb1d354-bb58-452f-ab85-96511642fbae" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00022_frag_00001" data-state="slide_00022_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+<div class="jb-input jb-render jb-code" style="text-align:center">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-input-code jb-render">
+<div class="highlight" style="background: #f8f8f8; color:#101010;display=inline-block;"><pre style="line-height: 125%"><span></span>eidx <span style="color: #666666">=</span> np<span style="color: #666666">.</span>vstack( np<span style="color: #666666">.</span>where( edges <span style="color: #666666">&gt;</span> THRESHOLD ) )
+
+imageHypot <span style="color: #666666">=</span> math<span style="color: #666666">.</span>hypot(thres<span style="color: #666666">.</span>shape[<span style="color: #666666">0</span>], thres<span style="color: #666666">.</span>shape[<span style="color: #666666">1</span>] )
+rhoBuckets <span style="color: #666666">=</span> <span style="color: #008000">int</span>(imageHypot)<span style="color: #666666">+1</span>
+thetaBuckets <span style="color: #666666">=</span> <span style="color: #666666">180</span>
+
+<span style="color: #408080; font-style: italic">#eidx = np.array([ [ 5, 7, 9], [5, 7, 9 ] ] )</span>
+<span style="color: #408080; font-style: italic">#imageHypot = 15</span>
+<span style="color: #408080; font-style: italic">#rhoBuckets = 15</span>
+
+h <span style="color: #666666">=</span> findHoughLines( eidx, thetaBuckets, rhoBuckets, imageHypot  )
+</pre></div>
+
+</div><!-- end of jb-input-code jb-render -->
+
+</div>
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-a0ae6665-7174-421f-8993-04a3d284fa11" ><span id="id-a0ae6665-7174-421f-8993-04a3d284fa11"><img id="img-id-a0ae6665-7174-421f-8993-04a3d284fa11"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-076a925c-4197-43eb-9518-34d7b136e34f" ><span id="id-076a925c-4197-43eb-9518-34d7b136e34f"><img id="img-id-076a925c-4197-43eb-9518-34d7b136e34f" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00023_frag_00001" data-state="slide_00023_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+<div class="jb-input jb-render jb-code" style="text-align:center">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-input-code jb-render">
+<div class="highlight" style="background: #f8f8f8; color:#101010;display=inline-block;"><pre style="line-height: 125%"><span></span><span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">drawHoughSpace</span>(ax, h, imageHypot ):
+  height, width <span style="color: #666666">=</span> h<span style="color: #666666">.</span>shape
+  <span style="color: #408080; font-style: italic">#xs = np.linspace(0,math.pi * 2, width )</span>
+  xs <span style="color: #666666">=</span> np<span style="color: #666666">.</span>linspace(<span style="color: #666666">0</span>,<span style="color: #666666">360.0</span>, width )
+  ys <span style="color: #666666">=</span> np<span style="color: #666666">.</span>linspace(<span style="color: #666666">0</span>, imageHypot, height )
+  <span style="color: #008000">print</span>( <span style="color: #008000">len</span>(xs), <span style="color: #008000">len</span>(ys) )
+  xss, yss <span style="color: #666666">=</span> np<span style="color: #666666">.</span>meshgrid( xs, ys )
+
+  ax<span style="color: #666666">.</span>scatter( xss, yss, <span style="color: #666666">30</span>, c<span style="color: #666666">=</span>h )
+
+  rho_i, theta_i <span style="color: #666666">=</span> np<span style="color: #666666">.</span>unravel_index(np<span style="color: #666666">.</span>argmax(h), h<span style="color: #666666">.</span>shape)
+  theta <span style="color: #666666">=</span> xs[theta_i] <span style="color: #408080; font-style: italic"># +(0.5*width) #(theta_i + 0.5)/width * 360.0</span>
+  rho <span style="color: #666666">=</span> ys[rho_i] <span style="color: #408080; font-style: italic"># + ( 0.5 * height ) # * imageHypot</span>
+
+  ax<span style="color: #666666">.</span>scatter([theta], [rho], <span style="color: #666666">30</span>, color<span style="color: #666666">=</span><span style="color: #BA2121">&#39;red&#39;</span>)
+</pre></div>
+
+</div><!-- end of jb-input-code jb-render -->
+
+</div>
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-06188ac4-3bfa-4c66-98d7-892e05799772" ><span id="id-06188ac4-3bfa-4c66-98d7-892e05799772"><img id="img-id-06188ac4-3bfa-4c66-98d7-892e05799772"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-af8ff367-b233-4263-942a-8786a9df4cac" ><span id="id-af8ff367-b233-4263-942a-8786a9df4cac"><img id="img-id-af8ff367-b233-4263-942a-8786a9df4cac" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00024_frag_00001" data-state="slide_00024_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+<div class="jb-input jb-render jb-code" style="text-align:center">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-input-code jb-render">
+<div class="highlight" style="background: #f8f8f8; color:#101010;display=inline-block;"><pre style="line-height: 125%"><span></span><span style="color: #008000">print</span>( img<span style="color: #666666">.</span>shape, h<span style="color: #666666">.</span>shape )
+fig <span style="color: #666666">=</span> plt<span style="color: #666666">.</span>figure()
+ax <span style="color: #666666">=</span> fig<span style="color: #666666">.</span>add_subplot(<span style="color: #666666">1</span>,<span style="color: #666666">1</span>,<span style="color: #666666">1</span>)
+
+drawHoughSpace( ax, h, imageHypot )
+img_ <span style="color: #666666">=</span> addJBFigure(<span style="color: #BA2121">&quot;hough1&quot;</span>, <span style="color: #666666">0</span>, <span style="color: #666666">0</span>, fig )
+plt<span style="color: #666666">.</span>close()
+</pre></div>
+
+</div><!-- end of jb-input-code jb-render -->
+
+</div>
+<div class="jb-print jb-render">
+<div class="jb-output jb-render code" style="text-align:center">
+<div class="jb-stdout code" style="display:inline-block; width:90%">
+<pre >
+(480, 640, 4) (801, 180)
+180 801
+</pre>
+</div>
+</div>
+
+</div><!-- end of jb-print jb-render -->
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-d088da97-136e-4da2-b19a-a1e7b6291558" ><span id="id-d088da97-136e-4da2-b19a-a1e7b6291558"><img id="img-id-d088da97-136e-4da2-b19a-a1e7b6291558"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-69e43eef-8f4c-4a3b-b482-80d95e89c017" ><span id="id-69e43eef-8f4c-4a3b-b482-80d95e89c017"><img id="img-id-69e43eef-8f4c-4a3b-b482-80d95e89c017" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00025_frag_00001" data-state="slide_00025_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+
+<div class="jb-output-code jb-render">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-output jb-render">
+
+<h1>Hough Space Visualization</h1>
+
+<span id="id-48ae5abd-a0bf-4d56-90f7-5c23e2efca09" ><span id="id-48ae5abd-a0bf-4d56-90f7-5c23e2efca09"><img id="img-id-48ae5abd-a0bf-4d56-90f7-5c23e2efca09"     src="assets/images/hough1.svg"/></span>
+</span>
+</div><!-- end of jb-output jb-render -->
+</div><!-- end of jb-output-code jb-render -->
+
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-ac17d44d-ae59-406b-81a1-bdfb51c91e1e" ><span id="id-ac17d44d-ae59-406b-81a1-bdfb51c91e1e"><img id="img-id-ac17d44d-ae59-406b-81a1-bdfb51c91e1e"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-5d0e3c51-3f60-4fb7-a74e-ee99390d0b0c" ><span id="id-5d0e3c51-3f60-4fb7-a74e-ee99390d0b0c"><img id="img-id-5d0e3c51-3f60-4fb7-a74e-ee99390d0b0c" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00026_frag_00001" data-state="slide_00026_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+<div class="jb-input jb-render jb-code" style="text-align:center">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-input-code jb-render">
+<div class="highlight" style="background: #f8f8f8; color:#101010;display=inline-block;"><pre style="line-height: 125%"><span></span><span style="color: #008000">print</span>(np<span style="color: #666666">.</span>max(h))
+<span style="color: #008000">print</span>(np<span style="color: #666666">.</span>unravel_index(np<span style="color: #666666">.</span>argmax(h), h<span style="color: #666666">.</span>shape))
+
+rho_i, theta_i <span style="color: #666666">=</span> np<span style="color: #666666">.</span>unravel_index(np<span style="color: #666666">.</span>argmax(h), h<span style="color: #666666">.</span>shape)
+theta <span style="color: #666666">=</span> (theta_i <span style="color: #666666">+</span> <span style="color: #666666">0.5</span>)<span style="color: #666666">/</span>thetaBuckets <span style="color: #666666">*</span> <span style="color: #666666">360.0/180.0*</span>math<span style="color: #666666">.</span>pi
+rho <span style="color: #666666">=</span> (rho_i <span style="color: #666666">+</span> <span style="color: #666666">0.5</span>) <span style="color: #666666">*</span> imageHypot<span style="color: #666666">/</span>rhoBuckets
+<span style="color: #008000">print</span>( <span style="color: #BA2121">f&quot;Found line with equation </span><span style="color: #BB6688; font-weight: bold">{</span>rho<span style="color: #BB6688; font-weight: bold">}</span><span style="color: #BA2121"> = cos( </span><span style="color: #BB6688; font-weight: bold">{</span>theta<span style="color: #666666">/</span>math<span style="color: #666666">.</span>pi<span style="color: #666666">*180.0</span><span style="color: #BB6688; font-weight: bold">}</span><span style="color: #BA2121"> ) * x + sin( </span><span style="color: #BB6688; font-weight: bold">{</span>theta<span style="color: #666666">/</span>math<span style="color: #666666">.</span>pi<span style="color: #666666">*180.0</span><span style="color: #BB6688; font-weight: bold">}</span><span style="color: #BA2121"> ) * y&quot;</span> )
+</pre></div>
+
+</div><!-- end of jb-input-code jb-render -->
+
+</div>
+<div class="jb-print jb-render">
+<div class="jb-output jb-render code" style="text-align:center">
+<div class="jb-stdout code" style="display:inline-block; width:90%">
+<pre >
+171.0
+(193, 44)
+Found line with equation 193.25842696629215 = cos( 89.0 ) * x + sin( 89.0 ) * y
+</pre>
+</div>
+</div>
+
+</div><!-- end of jb-print jb-render -->
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-c2d0683a-3d09-4755-bd4f-03e6501fbc63" ><span id="id-c2d0683a-3d09-4755-bd4f-03e6501fbc63"><img id="img-id-c2d0683a-3d09-4755-bd4f-03e6501fbc63"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-28a4e5c5-a321-47b9-8ed8-8321b4f35f7c" ><span id="id-28a4e5c5-a321-47b9-8ed8-8321b4f35f7c"><img id="img-id-28a4e5c5-a321-47b9-8ed8-8321b4f35f7c" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00027_frag_00001" data-state="slide_00027_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+<div class="jb-input jb-render jb-code" style="text-align:center">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-input-code jb-render">
+<div class="highlight" style="background: #f8f8f8; color:#101010;display=inline-block;"><pre style="line-height: 125%"><span></span><span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">drawLine</span>(ax, rho, theta, size ):
+  height, width <span style="color: #666666">=</span> size[<span style="color: #666666">0</span>], size[<span style="color: #666666">1</span>]
+  <span style="color: #408080; font-style: italic"># rho = x * cos(theta) + y * sin(theta)</span>
+  <span style="color: #408080; font-style: italic"># rho - x * cos(theta)/sin(theta) = y</span>
+
+  c <span style="color: #666666">=</span> math<span style="color: #666666">.</span>cos(theta<span style="color: #666666">+90.0/180.0</span> <span style="color: #666666">*</span> math<span style="color: #666666">.</span>pi)
+  s <span style="color: #666666">=</span> math<span style="color: #666666">.</span>sin(theta<span style="color: #666666">+90.0/180.0</span> <span style="color: #666666">*</span> math<span style="color: #666666">.</span>pi)
+
+  <span style="color: #008000; font-weight: bold">if</span> ( <span style="color: #008000">abs</span>( c ) <span style="color: #666666">&gt;</span> <span style="color: #008000">abs</span>( s ) ):
+      xMin <span style="color: #666666">=</span> <span style="color: #666666">0</span>
+      xMax <span style="color: #666666">=</span> width
+      yMin <span style="color: #666666">=</span> rho <span style="color: #666666">-</span> xMin <span style="color: #666666">*</span> <span style="color: #666666">1/</span>math<span style="color: #666666">.</span>tan(theta)
+      yMax <span style="color: #666666">=</span> rho <span style="color: #666666">-</span> xMax <span style="color: #666666">*</span> <span style="color: #666666">1/</span>math<span style="color: #666666">.</span>tan(theta)
+      col <span style="color: #666666">=</span> <span style="color: #BA2121">&#39;b-&#39;</span>
+  <span style="color: #008000; font-weight: bold">else</span>:
+      yMin <span style="color: #666666">=</span> <span style="color: #666666">0</span>
+      yMax <span style="color: #666666">=</span> height <span style="color: #666666">-</span> <span style="color: #666666">1</span>
+      xMin <span style="color: #666666">=</span> rho <span style="color: #666666">-</span> yMin <span style="color: #666666">*</span> math<span style="color: #666666">.</span>tan(theta)
+      xMax <span style="color: #666666">=</span> rho <span style="color: #666666">-</span> yMax <span style="color: #666666">*</span> math<span style="color: #666666">.</span>tan(theta)
+      col<span style="color: #666666">=</span><span style="color: #BA2121">&#39;g-&#39;</span>
+
+  ax<span style="color: #666666">.</span>plot( [xMin,xMax], [yMin,yMax], col, linewidth<span style="color: #666666">=3</span> ) 
+  
+</pre></div>
+
+</div><!-- end of jb-input-code jb-render -->
+
+</div>
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-99a374b8-de99-40e8-8fa6-bd90751e3f05" ><span id="id-99a374b8-de99-40e8-8fa6-bd90751e3f05"><img id="img-id-99a374b8-de99-40e8-8fa6-bd90751e3f05"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-63e28a09-af19-4d0c-a2d0-d69823bb375c" ><span id="id-63e28a09-af19-4d0c-a2d0-d69823bb375c"><img id="img-id-63e28a09-af19-4d0c-a2d0-d69823bb375c" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00028_frag_00001" data-state="slide_00028_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+<div class="jb-input jb-render jb-code" style="text-align:center">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-input-code jb-render">
+<div style="font-size:0.5m"><!-- start of style="font-size:0.5m" -->
+<div class="highlight" style="background: #f8f8f8; color:#101010;display=inline-block;"><pre style="line-height: 125%"><span></span>kernel <span style="color: #666666">=</span> <span style="color: #666666">3</span> <span style="color: #408080; font-style: italic">#@param [&quot;3&quot;, &quot;5&quot;, &quot;7&quot;, &quot;9&quot;, &quot;11&quot;] {type:&quot;raw&quot;}</span>
+THRESHOLD <span style="color: #666666">=</span> <span style="color: #666666">0.55</span> <span style="color: #408080; font-style: italic">#@param</span>
+
+img <span style="color: #666666">=</span> io<span style="color: #666666">.</span>imread( url )
+img <span style="color: #666666">=</span> cv2<span style="color: #666666">.</span>resize(img, (<span style="color: #666666">320</span>, <span style="color: #666666">240</span> ) )[<span style="color: #666666">20</span>:<span style="color: #666666">300</span>,<span style="color: #666666">20</span>:<span style="color: #666666">220</span>]
+
+gray <span style="color: #666666">=</span> cv2<span style="color: #666666">.</span>cvtColor( img,  cv2<span style="color: #666666">.</span>COLOR_RGB2GRAY );
+<span style="color: #408080; font-style: italic">#gray = gray[20:200,20:300]</span>
+
+<span style="color: #408080; font-style: italic">#gray = np.random.randint(2,size=(10,20), dtype=np.uint8 )*255</span>
+
+gray <span style="color: #666666">=</span> np<span style="color: #666666">.</span>zeros((<span style="color: #666666">20</span>,<span style="color: #666666">30</span>), dtype<span style="color: #666666">=</span>np<span style="color: #666666">.</span>uint8)
+<span style="color: #408080; font-style: italic">#gray[4:,:] = 255</span>
+gray[:,<span style="color: #666666">26</span>:] <span style="color: #666666">=</span> <span style="color: #666666">255</span>
+
+<span style="color: #408080; font-style: italic">#gray = np.zeros((img.shape), dtype=np.uint8)</span>
+<span style="color: #408080; font-style: italic">#gray[50:200,:] = 255</span>
+
+sobelX <span style="color: #666666">=</span> cv2<span style="color: #666666">.</span>Sobel( gray, cv2<span style="color: #666666">.</span>CV_32F, <span style="color: #666666">1</span>, <span style="color: #666666">0</span>, ksize<span style="color: #666666">=</span> kernel)
+sobelY <span style="color: #666666">=</span> cv2<span style="color: #666666">.</span>Sobel( gray, cv2<span style="color: #666666">.</span>CV_32F, <span style="color: #666666">0</span>, <span style="color: #666666">1</span>, ksize<span style="color: #666666">=</span> kernel)
+
+edges <span style="color: #666666">=</span> np<span style="color: #666666">.</span>abs(sobelX) <span style="color: #666666">+</span> np<span style="color: #666666">.</span>abs(sobelY)
+<span style="color: #408080; font-style: italic">#edges = sobelX + sobelY</span>
+edges <span style="color: #666666">=</span> edges <span style="color: #666666">/</span> np<span style="color: #666666">.</span>max(edges)
+<span style="color: #008000">print</span>(edges<span style="color: #666666">.</span>shape)
+
+gray<span style="color: #666666">=</span>np<span style="color: #666666">.</span>zeros((<span style="color: #666666">10</span>,<span style="color: #666666">20</span>))
+edges <span style="color: #666666">=</span> np<span style="color: #666666">.</span>random<span style="color: #666666">.</span>randint(<span style="color: #666666">2</span>,size<span style="color: #666666">=</span>(<span style="color: #666666">10</span>,<span style="color: #666666">20</span>), dtype<span style="color: #666666">=</span>np<span style="color: #666666">.</span>uint8 )<span style="color: #666666">*255</span>
+edges <span style="color: #666666">=</span> edges <span style="color: #666666">*</span> np<span style="color: #666666">.</span>random<span style="color: #666666">.</span>randint(<span style="color: #666666">2</span>,size<span style="color: #666666">=</span>(<span style="color: #666666">10</span>,<span style="color: #666666">20</span>), dtype<span style="color: #666666">=</span>np<span style="color: #666666">.</span>uint8 )<span style="color: #666666">*255</span>
+edges <span style="color: #666666">=</span> edges <span style="color: #666666">*</span> np<span style="color: #666666">.</span>random<span style="color: #666666">.</span>randint(<span style="color: #666666">2</span>,size<span style="color: #666666">=</span>(<span style="color: #666666">10</span>,<span style="color: #666666">20</span>), dtype<span style="color: #666666">=</span>np<span style="color: #666666">.</span>uint8 )<span style="color: #666666">*255</span>
+
+<span style="color: #408080; font-style: italic">#edges[:,15] = 1.0</span>
+<span style="color: #408080; font-style: italic">#edges[0,:] = 1.0</span>
+
+eidx <span style="color: #666666">=</span> np<span style="color: #666666">.</span>vstack( np<span style="color: #666666">.</span>where( edges <span style="color: #666666">&gt;</span> THRESHOLD ) )
+<span style="color: #408080; font-style: italic">#print(eidx)</span>
+imageHypot <span style="color: #666666">=</span> math<span style="color: #666666">.</span>hypot(edges<span style="color: #666666">.</span>shape[<span style="color: #666666">0</span>], edges<span style="color: #666666">.</span>shape[<span style="color: #666666">1</span>] )
+rhoBuckets <span style="color: #666666">=</span> <span style="color: #008000">int</span>(imageHypot)<span style="color: #666666">+1</span>
+thetaBuckets <span style="color: #666666">=</span> <span style="color: #666666">360</span>
+<span style="color: #408080; font-style: italic">#print(&quot;imageHypot&quot;, imageHypot, &quot;rhoBuckets&quot;, rhoBuckets )</span>
+
+<span style="color: #408080; font-style: italic">#eidx = np.array([ [ 5, 7, 9], [5, 7, 9 ] ] )</span>
+<span style="color: #408080; font-style: italic">#imageHypot = 15</span>
+<span style="color: #408080; font-style: italic">#rhoBuckets = 15</span>
+
+h <span style="color: #666666">=</span> findHoughLines( eidx, thetaBuckets, rhoBuckets, imageHypot  )
+
+maxH <span style="color: #666666">=</span> np<span style="color: #666666">.</span>max(h)
+rho_i, theta_i <span style="color: #666666">=</span> np<span style="color: #666666">.</span>unravel_index(np<span style="color: #666666">.</span>argmax(h), h<span style="color: #666666">.</span>shape)
+theta <span style="color: #666666">=</span> (theta_i <span style="color: #666666">+</span> <span style="color: #666666">0.5</span>)<span style="color: #666666">/</span>thetaBuckets <span style="color: #666666">*</span> <span style="color: #666666">360.0/180.0*</span>math<span style="color: #666666">.</span>pi
+rho <span style="color: #666666">=</span> (rho_i <span style="color: #666666">+</span> <span style="color: #666666">0.5</span>) <span style="color: #666666">*</span> imageHypot<span style="color: #666666">/</span>rhoBuckets
+<span style="color: #008000">print</span>( <span style="color: #BA2121">f&quot;Found line with </span><span style="color: #BB6688; font-weight: bold">{</span>h[rho_i,theta_i]<span style="color: #BB6688; font-weight: bold">}</span><span style="color: #BA2121"> points, equation </span><span style="color: #BB6688; font-weight: bold">{</span>rho<span style="color: #BB6688; font-weight: bold">}</span><span style="color: #BA2121"> = cos( </span><span style="color: #BB6688; font-weight: bold">{</span>theta<span style="color: #666666">/</span>math<span style="color: #666666">.</span>pi<span style="color: #666666">*180.0</span><span style="color: #BB6688; font-weight: bold">}</span><span style="color: #BA2121"> ) * x + sin( </span><span style="color: #BB6688; font-weight: bold">{</span>theta<span style="color: #666666">/</span>math<span style="color: #666666">.</span>pi<span style="color: #666666">*180.0</span><span style="color: #BB6688; font-weight: bold">}</span><span style="color: #BA2121"> ) * y&quot;</span> )
+
+
+fig <span style="color: #666666">=</span> plt<span style="color: #666666">.</span>figure( figsize<span style="color: #666666">=</span>( <span style="color: #666666">15</span>, <span style="color: #666666">15</span>) )
+ax1 <span style="color: #666666">=</span> fig<span style="color: #666666">.</span>add_subplot(<span style="color: #666666">2</span>,<span style="color: #666666">1</span>,<span style="color: #666666">1</span>)
+ax1<span style="color: #666666">.</span>set_title(<span style="color: #BA2121">&#39;Detected Lines&#39;</span>)
+
+<span style="color: #408080; font-style: italic">#print(edges)</span>
+
+ax1<span style="color: #666666">.</span>imshow( gray, cmap<span style="color: #666666">=</span><span style="color: #BA2121">&quot;gray&quot;</span> )
+ax1<span style="color: #666666">.</span>scatter(eidx[<span style="color: #666666">1</span>,:]<span style="color: #666666">+0.5</span>, eidx[<span style="color: #666666">0</span>,:]<span style="color: #666666">+0.5</span>, <span style="color: #666666">15</span>, color<span style="color: #666666">=</span><span style="color: #BA2121">&#39;red&#39;</span>)
+
+drawLine(ax1, rho, theta, edges<span style="color: #666666">.</span>shape )
+
+ax2 <span style="color: #666666">=</span> fig<span style="color: #666666">.</span>add_subplot(<span style="color: #666666">2</span>,<span style="color: #666666">1</span>,<span style="color: #666666">2</span>)
+ax2<span style="color: #666666">.</span>set_title(<span style="color: #BA2121">&quot;Hough Space&quot;</span>)
+ax2<span style="color: #666666">.</span>imshow(h)
+ax2<span style="color: #666666">.</span>scatter([theta_i], [ rho_i], <span style="color: #666666">30</span>, color<span style="color: #666666">=</span><span style="color: #BA2121">&#39;red&#39;</span>)
+
+ht <span style="color: #666666">=</span> addJBFigure(<span style="color: #BA2121">&quot;ht&quot;</span>, <span style="color: #666666">0</span>, <span style="color: #666666">0</span>, fig )
+plt<span style="color: #666666">.</span>close()
+</pre></div>
+
+</div><!-- end of style="font-size:0.5m" -->
+</div><!-- end of jb-input-code jb-render -->
+
+</div>
+<div class="jb-print jb-render">
+<div style="font-size:0.5m"><!-- start of style="font-size:0.5m" -->
+<div class="jb-output jb-render code" style="text-align:center">
+<div class="jb-stdout code" style="display:inline-block; width:90%">
+<pre style="font-size:0.5m">
+(20, 30)
+Found line with 9.0 points, equation 3.4027121396735933 = cos( 77.5 ) * x + sin( 77.5 ) * y
+</pre>
+</div>
+</div>
+
+</div><!-- end of style="font-size:0.5m" -->
+</div><!-- end of jb-print jb-render -->
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-ae40782e-2cc6-4fc3-9c2d-29ba20e5e99c" ><span id="id-ae40782e-2cc6-4fc3-9c2d-29ba20e5e99c"><img id="img-id-ae40782e-2cc6-4fc3-9c2d-29ba20e5e99c"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-c0bbefcf-3bb8-41ae-b02a-ef6fa9a637e3" ><span id="id-c0bbefcf-3bb8-41ae-b02a-ef6fa9a637e3"><img id="img-id-c0bbefcf-3bb8-41ae-b02a-ef6fa9a637e3" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00029_frag_00001" data-state="slide_00029_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+
+<div class="jb-output-code jb-render">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-output jb-render">
+
+<div style="background:#a0a0a0">
+<span id="id-e25d5db0-24ec-49a7-a30d-794562a3426b" ><span id="id-e25d5db0-24ec-49a7-a30d-794562a3426b"><img id="img-id-e25d5db0-24ec-49a7-a30d-794562a3426b"     src="assets/images/ht.svg"/></span>
+</span>
+
+</div>
+</div><!-- end of jb-output jb-render -->
+</div><!-- end of jb-output-code jb-render -->
+
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-d80c3320-25a3-45b5-b886-67b87ec1f452" ><span id="id-d80c3320-25a3-45b5-b886-67b87ec1f452"><img id="img-id-d80c3320-25a3-45b5-b886-67b87ec1f452"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-597b9dab-c71d-4002-a0e0-5d52f575b215" ><span id="id-597b9dab-c71d-4002-a0e0-5d52f575b215"><img id="img-id-597b9dab-c71d-4002-a0e0-5d52f575b215" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00030_frag_00001" data-state="slide_00030_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+
+<div class="jb-output-code jb-render">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-output jb-render">
+
+<h1>Issues Using Hough Lines</h1>
+
+<span id="id-8649eb2b-5e0c-4f47-8e43-5f7e00a54267" ><span id="id-8649eb2b-5e0c-4f47-8e43-5f7e00a54267"><img id="img-id-8649eb2b-5e0c-4f47-8e43-5f7e00a54267"     src="assets/images/prob1.svg"/></span>
+</span>
+</div><!-- end of jb-output jb-render -->
+</div><!-- end of jb-output-code jb-render -->
+
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-f5a8912b-35d5-453a-942c-cda85c30c50b" ><span id="id-f5a8912b-35d5-453a-942c-cda85c30c50b"><img id="img-id-f5a8912b-35d5-453a-942c-cda85c30c50b"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-b368005f-d1e1-40e4-ba66-284456675c84" ><span id="id-b368005f-d1e1-40e4-ba66-284456675c84"><img id="img-id-b368005f-d1e1-40e4-ba66-284456675c84" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00031_frag_00001" data-state="slide_00031_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+<div class="jb-input jb-render jb-code" style="text-align:center">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-input-code jb-render">
+<div class="highlight" style="background: #f8f8f8; color:#101010;display=inline-block;"><pre style="line-height: 125%"><span></span>edges <span style="color: #666666">=</span> img
+eidx <span style="color: #666666">=</span> np<span style="color: #666666">.</span>vstack( np<span style="color: #666666">.</span>where( edges <span style="color: #666666">&gt;</span> THRESHOLD ) )
+<span style="color: #408080; font-style: italic">#print(eidx)</span>
+imageHypot <span style="color: #666666">=</span> math<span style="color: #666666">.</span>hypot(edges<span style="color: #666666">.</span>shape[<span style="color: #666666">0</span>], edges<span style="color: #666666">.</span>shape[<span style="color: #666666">1</span>] )
+rhoBuckets <span style="color: #666666">=</span> <span style="color: #008000">int</span>(imageHypot)<span style="color: #666666">+1</span>
+thetaBuckets <span style="color: #666666">=</span> <span style="color: #666666">360</span>
+<span style="color: #408080; font-style: italic">#print(&quot;imageHypot&quot;, imageHypot, &quot;rhoBuckets&quot;, rhoBuckets )</span>
+
+<span style="color: #408080; font-style: italic">#eidx = np.array([ [ 5, 7, 9], [5, 7, 9 ] ] )</span>
+<span style="color: #408080; font-style: italic">#imageHypot = 15</span>
+<span style="color: #408080; font-style: italic">#rhoBuckets = 15</span>
+
+h <span style="color: #666666">=</span> findHoughLines( eidx, thetaBuckets, rhoBuckets, imageHypot  )
+
+maxH <span style="color: #666666">=</span> np<span style="color: #666666">.</span>max(h)
+rho_i, theta_i <span style="color: #666666">=</span> np<span style="color: #666666">.</span>unravel_index(np<span style="color: #666666">.</span>argmax(h), h<span style="color: #666666">.</span>shape)
+theta <span style="color: #666666">=</span> (theta_i <span style="color: #666666">+</span> <span style="color: #666666">0.5</span>)<span style="color: #666666">/</span>thetaBuckets <span style="color: #666666">*</span> <span style="color: #666666">360.0/180.0*</span>math<span style="color: #666666">.</span>pi
+rho <span style="color: #666666">=</span> (rho_i <span style="color: #666666">+</span> <span style="color: #666666">0.5</span>) <span style="color: #666666">*</span> imageHypot<span style="color: #666666">/</span>rhoBuckets
+<span style="color: #008000">print</span>( <span style="color: #BA2121">f&quot;Found line with </span><span style="color: #BB6688; font-weight: bold">{</span>h[rho_i,theta_i]<span style="color: #BB6688; font-weight: bold">}</span><span style="color: #BA2121"> points, equation </span><span style="color: #BB6688; font-weight: bold">{</span>rho<span style="color: #BB6688; font-weight: bold">}</span><span style="color: #BA2121"> = cos( </span><span style="color: #BB6688; font-weight: bold">{</span>theta<span style="color: #666666">/</span>math<span style="color: #666666">.</span>pi<span style="color: #666666">*180.0</span><span style="color: #BB6688; font-weight: bold">}</span><span style="color: #BA2121"> ) * x + sin( </span><span style="color: #BB6688; font-weight: bold">{</span>theta<span style="color: #666666">/</span>math<span style="color: #666666">.</span>pi<span style="color: #666666">*180.0</span><span style="color: #BB6688; font-weight: bold">}</span><span style="color: #BA2121"> ) * y&quot;</span> )
+
+
+fig <span style="color: #666666">=</span> plt<span style="color: #666666">.</span>figure( figsize<span style="color: #666666">=</span>( <span style="color: #666666">15</span>, <span style="color: #666666">15</span>) )
+ax1 <span style="color: #666666">=</span> fig<span style="color: #666666">.</span>add_subplot(<span style="color: #666666">2</span>,<span style="color: #666666">1</span>,<span style="color: #666666">1</span>)
+ax1<span style="color: #666666">.</span>set_title(<span style="color: #BA2121">&#39;Detected Lines&#39;</span>)
+
+<span style="color: #408080; font-style: italic">#print(edges)</span>
+
+ax1<span style="color: #666666">.</span>imshow( gray, cmap<span style="color: #666666">=</span><span style="color: #BA2121">&quot;gray&quot;</span> )
+ax1<span style="color: #666666">.</span>scatter(eidx[<span style="color: #666666">1</span>,:], eidx[<span style="color: #666666">0</span>,:], <span style="color: #666666">15</span>, color<span style="color: #666666">=</span><span style="color: #BA2121">&#39;red&#39;</span>)
+
+drawLine(ax1, rho, theta, edges<span style="color: #666666">.</span>shape )
+
+ax2 <span style="color: #666666">=</span> fig<span style="color: #666666">.</span>add_subplot(<span style="color: #666666">2</span>,<span style="color: #666666">1</span>,<span style="color: #666666">2</span>)
+ax2<span style="color: #666666">.</span>set_title(<span style="color: #BA2121">&quot;Hough Space&quot;</span>)
+ax2<span style="color: #666666">.</span>imshow(h)
+ax2<span style="color: #666666">.</span>scatter([theta_i], [ rho_i], <span style="color: #666666">30</span>, color<span style="color: #666666">=</span><span style="color: #BA2121">&#39;red&#39;</span>)
+
+ht2 <span style="color: #666666">=</span> addJBFigure(<span style="color: #BA2121">&quot;ht2&quot;</span>, <span style="color: #666666">0</span>, <span style="color: #666666">0</span>, fig )
+plt<span style="color: #666666">.</span>close()
+</pre></div>
+
+</div><!-- end of jb-input-code jb-render -->
+
+</div>
+<div class="jb-print jb-render">
+<div class="jb-output jb-render code" style="text-align:center">
+<div class="jb-stdout code" style="display:inline-block; width:90%">
+<pre >
+Found line with 20.0 points, equation 1.4999814359881924 = cos( 90.5 ) * x + sin( 90.5 ) * y
+</pre>
+</div>
+</div>
+
+</div><!-- end of jb-print jb-render -->
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-21414eb1-6194-4f7a-a1f6-d8b60ea2c814" ><span id="id-21414eb1-6194-4f7a-a1f6-d8b60ea2c814"><img id="img-id-21414eb1-6194-4f7a-a1f6-d8b60ea2c814"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-f5eba2d4-c8c7-4e7a-83af-611d9b580b24" ><span id="id-f5eba2d4-c8c7-4e7a-83af-611d9b580b24"><img id="img-id-f5eba2d4-c8c7-4e7a-83af-611d9b580b24" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00032_frag_00001" data-state="slide_00032_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+
+<div class="jb-output-code jb-render">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-output jb-render">
+
+<span id="id-5aa8f7d6-8f59-4bc1-b954-f8e313c6a054" ><span id="id-5aa8f7d6-8f59-4bc1-b954-f8e313c6a054"><img id="img-id-5aa8f7d6-8f59-4bc1-b954-f8e313c6a054"     src="assets/images/ht2.svg"/></span>
+</span>
+</div><!-- end of jb-output jb-render -->
+</div><!-- end of jb-output-code jb-render -->
+
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-e967b18d-044e-4ce5-9259-766dea485541" ><span id="id-e967b18d-044e-4ce5-9259-766dea485541"><img id="img-id-e967b18d-044e-4ce5-9259-766dea485541"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-6a4d50ba-d8c5-413f-a275-7f70c55e784a" ><span id="id-6a4d50ba-d8c5-413f-a275-7f70c55e784a"><img id="img-id-6a4d50ba-d8c5-413f-a275-7f70c55e784a" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00033_frag_00001" data-state="slide_00033_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+
+<div class="jb-output-code jb-render">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-output jb-render">
+
+<h1>Incorrect Lines</h1>
+
+
+<div class="jb-text">
+
+<ul>
+<li>
+  The problem is that the Hough algorithm will find the line that is supported by the maximum number of pixels.
+</li>
+<li>
+  In the example above, it is the incorrect line
+</li>
+<li>
+  Currrently, the Hough algorithm does not consider the gradient of the edge pixels into consideration
+</li>
+<li>
+  So edge pixels on vertical edges can vote for horizontal lines
+</li>
+<li>
+  We can fix this issue by changing the voting of the pixels
+<ul>
+<li>
+  Restrict votes to what is indicated by the local gradient (pixels detected with Sobel_X cannot vote for horizontal lines)
+</li>
+<li>
+  Weighted voting based on local gradient <code>vote = (1 - diff(local gradient, vote))</code>, where <code>diff</code> is some function between 0 and 1 
+</li>
+</li>
+</div>
+</div><!-- end of jb-output jb-render -->
+</div><!-- end of jb-output-code jb-render -->
+
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-c385e4ce-a633-4f19-aea8-11e0b65bf6e8" ><span id="id-c385e4ce-a633-4f19-aea8-11e0b65bf6e8"><img id="img-id-c385e4ce-a633-4f19-aea8-11e0b65bf6e8"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-3a9f4a41-18fe-40dd-944e-7b3f6a744fdf" ><span id="id-3a9f4a41-18fe-40dd-944e-7b3f6a744fdf"><img id="img-id-3a9f4a41-18fe-40dd-944e-7b3f6a744fdf" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00034_frag_00001" data-state="slide_00034_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+
+<div class="jb-output-code jb-render">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-output jb-render">
+
+<h1>Multiple Lines</h1>
+
+
+<div class="jb-text">
+
+<ul>
+<li>
+  To detect multiple lines, we find the next largest maximum in the accumulator that is not too close
+  to the previous maximum
+</li>
+<li>
+  This is not quite correct, but good enough in practice
+</li>
+<li>
+  Correct solution - erase edge pixels and re-run complete Hough transform
+  is computationally too expensive
+</li>
+</div>
+</div><!-- end of jb-output jb-render -->
+</div><!-- end of jb-output-code jb-render -->
+
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-eb4b69e7-e3b2-4a39-9e10-8e691ca4f3a0" ><span id="id-eb4b69e7-e3b2-4a39-9e10-8e691ca4f3a0"><img id="img-id-eb4b69e7-e3b2-4a39-9e10-8e691ca4f3a0"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-b1e590a3-0762-4d62-ba76-6ec1ffd0260c" ><span id="id-b1e590a3-0762-4d62-ba76-6ec1ffd0260c"><img id="img-id-b1e590a3-0762-4d62-ba76-6ec1ffd0260c" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00035_frag_00001" data-state="slide_00035_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+
+<div class="jb-output-code jb-render">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-output jb-render">
+
+<h1>Line Segments</h1>
+
+
+<div class="jb-text">
+
+<ul>
+<li>
+  Usually we are interested in the line segments (start and end of line) instead of infinite length lines
+</li>
+<li>
+  To find the line segment, we start at one end of the line and keep going until we find an edge pixel (or a minimum
+  number of edge pixels). This defines the start of the line segment.
+</li>
+<li>
+  Continue along the lines until there are no more edge pixels (or too many missed
+  edge pixels). This defines the end of the line segment. 
+</li>
+
+<li>
+  Continue processing along the line, as there may be multiple line segments that belong to the same line
+  equation
+</li>
+</div>
+</div><!-- end of jb-output jb-render -->
+</div><!-- end of jb-output-code jb-render -->
+
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-46a4baa0-a49c-4fc9-8a0f-7776c5c5c7a5" ><span id="id-46a4baa0-a49c-4fc9-8a0f-7776c5c5c7a5"><img id="img-id-46a4baa0-a49c-4fc9-8a0f-7776c5c5c7a5"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-77a0e1e4-31d9-46eb-b2d6-fb1d57249f9f" ><span id="id-77a0e1e4-31d9-46eb-b2d6-fb1d57249f9f"><img id="img-id-77a0e1e4-31d9-46eb-b2d6-fb1d57249f9f" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+        </div>
+        </div>
+
+        <script src="js/reveal.js"></script>
+
+        <script>
+            // More info about config & dependencies:
+            // - https://github.com/hakimel/reveal.js#configuration
+            // - https://github.com/hakimel/reveal.js#dependencies
+            Reveal.initialize({
+                math: {
+                    mathjax: 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js',
+                    config: 'TeX-AMS_HTML-full',  // See http://docs.mathjax.org/en/latest/config-files.html
+                    // tex2jax: {
+                    //     inlineMath: [['$', '$'], ['\(', '\)']],
+                    //     displayMath: [['$$', '$$'], ['\[', '\]']],
+                    //     processEscapes: true,
+                    //     processEnvironments: true,
+                    //     skipTags: ['script', 'noscript', 'style', 'textarea', 'code', 'pre'],
+                    //     displayAlign: 'center',
+                    // }                
+                },
+                dependencies: [
+                    { src: 'plugin/markdown/marked.js' },
+                    { src: 'plugin/markdown/markdown.js' },
+                    { src: 'plugin/notes/notes.js', async: true },
+                    { src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+                    { src: 'plugin/math/math.js', async: true }
+                ]
+            });
+        </script>
+
+        <script>
+            <!-- Assets -->
+var assets = {
+"robbi" : new JBImage( "robbi", "12677", "162", "138", null, null, "assets/images/robbi", "png" ),
+"logo" : new JBImage( "logo", "12033", "0", "0", null, null, "assets/images/logo", "png" ),
+"fira-logo-1" : new JBImage( "fira-logo-1", "93836", "0", "0", null, null, "assets/images/FIRA-logo-1", "png" ),
+"pairLogo" : new JBImage( "pairLogo", "63051", "0", "0", null, null, "assets/images/pairLogo", "png" ),
+"orig" : new JBImage( "orig", "1368999", "0", "0", null, null, "assets/images/orig", "svg" ),
+"edge" : new JBImage( "edge", "731429", "0", "0", null, null, "assets/images/edge", "svg" ),
+"h1" : new JBImage( "h1", "38845", "0", "0", null, null, "assets/images/h1", "svg" ),
+"h2" : new JBImage( "h2", "47993", "0", "0", null, null, "assets/images/h2", "svg" ),
+"r1" : new JBImage( "r1", "7954", "0", "0", null, null, "assets/images/r1", "svg" ),
+"edges3" : new JBImage( "edges3", "2821273", "0", "0", null, null, "assets/images/edges3", "svg" ),
+"hough1" : new JBImage( "hough1", "22366273", "0", "0", null, null, "assets/images/hough1", "svg" ),
+"ht" : new JBImage( "ht", "74774", "0", "0", null, null, "assets/images/ht", "svg" ),
+"prob1" : new JBImage( "prob1", "11008", "0", "0", null, null, "assets/images/prob1", "svg" ),
+"ht2" : new JBImage( "ht2", "108326", "0", "0", null, null, "assets/images/ht2", "svg" ) 
+};
+var assetInstances = {
+    "id-b44fb054-3bf9-47a3-8634-c93e8f578c85": assets["robbi"],
+    "id-6098b606-313c-4b13-ba2b-c8770473031c": assets["robbi"],
+    "id-e729c42a-f96e-446d-8753-61db34b928e1": assets["robbi"],
+    "id-ce56a0e4-6217-49e0-bc41-305ef0f8e4fd": assets["robbi"],
+    "id-5382a978-d765-4dc5-823b-d2a35705241c": assets["robbi"],
+    "id-c1a73c63-3719-48fe-8e1f-bf690da353c0": assets["robbi"],
+    "id-b2cceb83-996a-4a3a-8f06-957372cf54c8": assets["robbi"],
+    "id-7bda2e29-85ce-426c-b740-0ba27145757b": assets["robbi"],
+    "id-bd783789-4dd0-4d7a-946e-77ac7a8ea8de": assets["robbi"],
+    "id-57e02701-4dad-4a6c-a23e-d28e0ab79089": assets["robbi"],
+    "id-357257dd-1898-4dcd-ab28-6df9878705a5": assets["robbi"],
+    "id-022860a1-91e7-4f63-8f66-eded37e12eb3": assets["robbi"],
+    "id-8289f747-5280-4cfa-833b-decc9c3b822d": assets["robbi"],
+    "id-7063956a-cd8d-4c6f-84c5-a6b469df8816": assets["robbi"],
+    "id-63411860-9d82-4c73-b7df-b257b4c22273": assets["robbi"],
+    "id-f215a771-9537-40b1-b635-828b3197b2eb": assets["robbi"],
+    "id-99ea28a2-396f-4683-b367-6e1d30ceae9a": assets["robbi"],
+    "id-735dceee-566b-4c89-957b-b8a4e1eeb76a": assets["robbi"],
+    "id-b02668f1-a9a5-4e4f-8e91-78cefc36112b": assets["robbi"],
+    "id-0cb1d354-bb58-452f-ab85-96511642fbae": assets["robbi"],
+    "id-076a925c-4197-43eb-9518-34d7b136e34f": assets["robbi"],
+    "id-af8ff367-b233-4263-942a-8786a9df4cac": assets["robbi"],
+    "id-69e43eef-8f4c-4a3b-b482-80d95e89c017": assets["robbi"],
+    "id-5d0e3c51-3f60-4fb7-a74e-ee99390d0b0c": assets["robbi"],
+    "id-28a4e5c5-a321-47b9-8ed8-8321b4f35f7c": assets["robbi"],
+    "id-63e28a09-af19-4d0c-a2d0-d69823bb375c": assets["robbi"],
+    "id-c0bbefcf-3bb8-41ae-b02a-ef6fa9a637e3": assets["robbi"],
+    "id-597b9dab-c71d-4002-a0e0-5d52f575b215": assets["robbi"],
+    "id-b368005f-d1e1-40e4-ba66-284456675c84": assets["robbi"],
+    "id-f5eba2d4-c8c7-4e7a-83af-611d9b580b24": assets["robbi"],
+    "id-6a4d50ba-d8c5-413f-a275-7f70c55e784a": assets["robbi"],
+    "id-3a9f4a41-18fe-40dd-944e-7b3f6a744fdf": assets["robbi"],
+    "id-b1e590a3-0762-4d62-ba76-6ec1ffd0260c": assets["robbi"],
+    "id-77a0e1e4-31d9-46eb-b2d6-fb1d57249f9f": assets["robbi"],
+    "id-8ee4a74b-7b43-4871-877c-4b509e05b982": assets["logo"],
+    "id-dc110a94-3535-4e3d-b5d6-2b4314528136": assets["logo"],
+    "id-02361ecb-f05a-4efe-9dc7-23a084e9c3a4": assets["logo"],
+    "id-ff107c7d-4ffc-4f40-9764-0d3aa07257b7": assets["logo"],
+    "id-72879fbd-1273-43c4-9b39-0fb7b7eaac23": assets["logo"],
+    "id-95914364-d1a6-4d2d-95ad-f1106381dbf4": assets["logo"],
+    "id-582ec9d9-ed01-4816-868c-04341899b1d4": assets["logo"],
+    "id-fc722f7c-8b9a-4545-82ca-4ebbc3cfe71d": assets["logo"],
+    "id-108d6b8f-0d34-4263-a786-6f95aea15aab": assets["logo"],
+    "id-1f42187b-9f0d-4016-a382-7210557c5321": assets["logo"],
+    "id-a5505354-5807-46fe-af11-ac03747efa4a": assets["logo"],
+    "id-8c4d8f2d-1269-4020-80bd-fd945e9636cd": assets["logo"],
+    "id-7a269d07-5622-4311-ae6c-4a4e0722dedf": assets["logo"],
+    "id-aeb17759-bde3-448e-a057-17763ce50884": assets["logo"],
+    "id-27b4d12f-ffe7-463e-8b3b-173127856ded": assets["logo"],
+    "id-89c1caf7-76d8-4e16-8342-827c94e03fa0": assets["logo"],
+    "id-5069f820-3504-4773-bcff-1184833144d1": assets["logo"],
+    "id-0f1ee4d6-4afc-47a4-b80a-5094c9ac1dd6": assets["logo"],
+    "id-69320b2f-1c6c-412e-8210-d1e66599f62b": assets["logo"],
+    "id-c56b9c6b-0198-46ee-890d-022e0ba0af6c": assets["logo"],
+    "id-a0ae6665-7174-421f-8993-04a3d284fa11": assets["logo"],
+    "id-06188ac4-3bfa-4c66-98d7-892e05799772": assets["logo"],
+    "id-d088da97-136e-4da2-b19a-a1e7b6291558": assets["logo"],
+    "id-ac17d44d-ae59-406b-81a1-bdfb51c91e1e": assets["logo"],
+    "id-c2d0683a-3d09-4755-bd4f-03e6501fbc63": assets["logo"],
+    "id-99a374b8-de99-40e8-8fa6-bd90751e3f05": assets["logo"],
+    "id-ae40782e-2cc6-4fc3-9c2d-29ba20e5e99c": assets["logo"],
+    "id-d80c3320-25a3-45b5-b886-67b87ec1f452": assets["logo"],
+    "id-f5a8912b-35d5-453a-942c-cda85c30c50b": assets["logo"],
+    "id-21414eb1-6194-4f7a-a1f6-d8b60ea2c814": assets["logo"],
+    "id-e967b18d-044e-4ce5-9259-766dea485541": assets["logo"],
+    "id-c385e4ce-a633-4f19-aea8-11e0b65bf6e8": assets["logo"],
+    "id-eb4b69e7-e3b2-4a39-9e10-8e691ca4f3a0": assets["logo"],
+    "id-46a4baa0-a49c-4fc9-8a0f-7776c5c5c7a5": assets["logo"],
+    "id-95c6c3b2-7a73-430b-a27f-8e1a8f2c8852": assets["orig"],
+    "id-6898fc7c-4c99-42b3-a97c-1cf6f41bedff": assets["edge"],
+    "id-d348df0d-3634-42e6-8b7e-1e2600ab35c7": assets["h1"],
+    "id-5b9914ab-6708-461a-bc58-520a0844791e": assets["h2"],
+    "id-579844b1-17a5-4ec8-895a-69560129266c": assets["r1"],
+    "id-baf30bd5-3820-455b-845a-f3e83ab61e5e": assets["edges3"],
+    "id-48ae5abd-a0bf-4d56-90f7-5c23e2efca09": assets["hough1"],
+    "id-e25d5db0-24ec-49a7-a30d-794562a3426b": assets["ht"],
+    "id-8649eb2b-5e0c-4f47-8e43-5f7e00a54267": assets["prob1"],
+    "id-5aa8f7d6-8f59-4bc1-b954-f8e313c6a054": assets["ht2"]
+};
+<!-- End of Assets -->
+
+            convertURLs(assetInstances, "smart-path");
+        </script>
+        <script>
+            <!-- Characters -->
+var characters =
+{};
+<!-- End of Characters -->
+
+        </script>
+    </body>
+</html>
